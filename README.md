@@ -13,6 +13,8 @@ flowchart LR
   Services --> Vector[Chroma Vector Store]
   Services --> Storage[Local File Storage]
   Services --> OpenAI[OpenAI API]
+  Client --> WebUI[React UI]
+  WebUI --> API
 ```
 
 ## Features
@@ -23,6 +25,7 @@ flowchart LR
 - RAG query with citations
 - API key authentication
 - Structured logging
+- React UI for querying
 
 ## Setup
 
@@ -34,6 +37,7 @@ docker compose up --build
 ```
 
 The API will be available at `http://localhost:8000`.
+The UI will be available at `http://localhost:5173`.
 
 ## Environment Variables
 
@@ -81,6 +85,14 @@ curl -X POST "http://localhost:8000/api/v1/knowledge-bases/<kb_id>/query" \
   -H "X-API-Key: changeme" \
   -H "Content-Type: application/json" \
   -d '{"question":"What is our security policy?","top_k":5}'
+```
+
+## UI (Local Dev)
+
+```bash
+cd web
+npm install
+npm run dev
 ```
 
 ## Design Decisions
