@@ -1,14 +1,14 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class IngestionRead(BaseModel):
-    id: str
-    knowledge_base_id: str
+    id: UUID
+    knowledge_base_id: UUID
     status: str
     message: str | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

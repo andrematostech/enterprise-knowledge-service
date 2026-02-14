@@ -1,15 +1,15 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DocumentRead(BaseModel):
-    id: str
-    knowledge_base_id: str
+    id: UUID
+    knowledge_base_id: UUID
     filename: str
     content_type: str
     size_bytes: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
