@@ -12,6 +12,8 @@ services:
       DATABASE_URL: "postgresql+psycopg://postgres:postgres@postgres:5432/eks"
       CHROMA_PATH: "/app/chroma"
       STORAGE_PATH: "/app/storage"
+      CHUNK_SIZE: "800"
+      CHUNK_OVERLAP: "100"
     volumes:
       - ./chroma:/app/chroma
       - ./storage:/app/storage

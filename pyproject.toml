@@ -16,6 +16,7 @@ dependencies = [
   "openai>=1.30",
   "python-multipart>=0.0.9",
   "alembic>=1.13",
+  "pypdf>=4.0",
 ]
 
 [project.optional-dependencies]

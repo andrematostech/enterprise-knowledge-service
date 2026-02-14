@@ -1,4 +1,5 @@
 import os
+import uuid
 from uuid import UUID
 
 from fastapi import UploadFile
@@ -36,14 +37,16 @@ class DocumentService:
         kb_folder = os.path.join(self._settings.storage_path, str(knowledge_base_id))
         ensure_directory(kb_folder)
 
+        document_id = uuid.uuid4()
         document = Document(
+            id=document_id,
             knowledge_base_id=knowledge_base_id,
             filename=filename,
             content_type=upload.content_type or "application/octet-stream",
             storage_path="",
             size_bytes=0,
         )
-        storage_filename = f"{document.id}_{filename}"
+        storage_filename = f"{document_id}_{filename}"
         storage_path = os.path.join(kb_folder, storage_filename)
 
         size_bytes = save_upload_file(upload, storage_path, max_bytes)

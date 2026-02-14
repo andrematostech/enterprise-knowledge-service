@@ -17,3 +17,10 @@ class Settings(BaseSettings):
 
     file_size_limit_mb: int = 25
     allowed_file_types: str = "pdf,txt,md,markdown"
+
+    chunk_size: int = 800
+    chunk_overlap: int = 100
+
+    class Config:
+        env_prefix = ""
+        case_sensitive = False

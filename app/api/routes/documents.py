@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 
-def get_service(db: Session) -> DocumentService:
+def get_service(db: Session = Depends(get_db)) -> DocumentService:
     settings = get_settings()
     doc_repo = DocumentRepository(db)
     kb_repo = KnowledgeBaseRepository(db)
@@ -29,9 +29,8 @@ def get_service(db: Session) -> DocumentService:
 def upload_document(
     knowledge_base_id: UUID,
     file: UploadFile,
-    db: Session = Depends(get_db),
+    service: DocumentService = Depends(get_service),
 ) -> DocumentRead:
-    service = get_service(db)
     try:
         document = service.upload(knowledge_base_id, file)
     except ValueError as exc:
@@ -40,14 +39,19 @@ def upload_document(
 
 
 @router.get("", response_model=list[DocumentRead])
-def list_documents(knowledge_base_id: UUID, db: Session = Depends(get_db)) -> list[DocumentRead]:
-    service = get_service(db)
+def list_documents(
+    knowledge_base_id: UUID,
+    service: DocumentService = Depends(get_service),
+) -> list[DocumentRead]:
     return [DocumentRead.model_validate(item) for item in service.list(knowledge_base_id)]
 
 
 @router.delete("/{document_id}", response_model=Message)
-def delete_document(knowledge_base_id: UUID, document_id: UUID, db: Session = Depends(get_db)) -> Message:
-    service = get_service(db)
+def delete_document(
+    knowledge_base_id: UUID,
+    document_id: UUID,
+    service: DocumentService = Depends(get_service),
+) -> Message:
     if not service.delete(knowledge_base_id, document_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return Message(detail="Deleted")

@@ -7,7 +7,11 @@ from app.main import create_app
 
 
 @pytest.fixture
-def client() -> TestClient:
+def app():
     os.environ["API_KEY"] = "test-key"
-    app = create_app()
+    return create_app()
+
+
+@pytest.fixture
+def client(app) -> TestClient:
     return TestClient(app)

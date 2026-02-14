@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -6,4 +8,7 @@ class IngestionRead(BaseModel):
     knowledge_base_id: str
     status: str
     message: str | None = None
-    created_at: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
