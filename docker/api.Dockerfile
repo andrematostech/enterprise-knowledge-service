@@ -3,11 +3,11 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY pyproject.toml /app/pyproject.toml
+COPY README.md /app/README.md
+COPY app /app/app
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .[dev]
-
-COPY app /app/app
 
 EXPOSE 8000
 
