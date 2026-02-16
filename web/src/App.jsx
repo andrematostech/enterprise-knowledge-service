@@ -79,10 +79,10 @@ export default function App() {
         <div className="sidebar_header">
           <div className="sidebar_brand">
             {sidebarCollapsed ? (
-              <span className="brand_ai">ai</span>
+              <span className="brand_ai">K</span>
             ) : (
               <>
-                EKS. <span className="brand_ai">ai</span>
+                Kivo
               </>
             )}
           </div>
@@ -128,13 +128,11 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Enterprise Knowledge Service</p>
-            <h1>EKS Console</h1>
-            <p className="lead">Query private knowledge bases with grounded answers and citations.</p>
           </div>
         </header>
 
         {activeTab === "home" ? (
-          <section className="grid home_grid">
+          <section className="home_panels">
             <div className="panel query_panel">
               <SectionHeader
                 title="Ask a question"
@@ -200,7 +198,7 @@ export default function App() {
 
         {activeTab === "settings" ? (
           <section className="grid">
-            <div className="panel wide">
+            <div className="panel wide settings_panel">
               <SectionHeader
                 title="Connection"
                 subtitle="Point the console to the correct API and knowledge base."
