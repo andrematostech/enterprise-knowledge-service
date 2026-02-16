@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY pyproject.toml /app/pyproject.toml
 COPY README.md /app/README.md
+COPY alembic.ini /app/alembic.ini
+COPY migrations /app/migrations
 COPY app /app/app
 
 RUN pip install --no-cache-dir --upgrade pip \

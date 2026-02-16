@@ -18,7 +18,7 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #ffe8d3, #f7f4ef 40%, #f4efe7 100%);
+  background: radial-gradient(circle at top, #1d0ee2, #c27f0c 40%, #f4efe7 100%);
   color: var(--ink);
   min-height: 100vh;
 }
@@ -40,7 +40,7 @@ body {
 .orb_one {
   width: 420px;
   height: 420px;
-  background: radial-gradient(circle, rgba(235, 94, 40, 0.35), transparent 70%);
+  background: radial-gradient(circle, rgba(32, 21, 182, 0.35), transparent 70%);
   top: -120px;
   left: -120px;
 }

@@ -3,12 +3,12 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
+    env_file:
+      - .env
     environment:
       APP_ENV: "dev"
       API_KEY: "changeme"
-      OPENAI_API_KEY: ""
       OPENAI_EMBED_MODEL: "text-embedding-3-small"
-      OPENAI_GEN_MODEL: ""
       DATABASE_URL: "postgresql+psycopg://postgres:postgres@postgres:5432/eks"
       CHROMA_PATH: "/app/chroma"
       STORAGE_PATH: "/app/storage"
