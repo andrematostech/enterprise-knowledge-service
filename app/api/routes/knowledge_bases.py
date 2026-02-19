@@ -3,14 +3,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_api_key
+from app.api.deps import get_db, require_auth
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.common import Message
 from app.schemas.knowledge_base import KnowledgeBaseCreate, KnowledgeBaseRead
 from app.services.knowledge_base_service import KnowledgeBaseService
 
 
-router = APIRouter(prefix="/knowledge-bases", tags=["knowledge-bases"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/knowledge-bases", tags=["knowledge-bases"], dependencies=[Depends(require_auth)])
 
 
 def get_service(db: Session = Depends(get_db)) -> KnowledgeBaseService:

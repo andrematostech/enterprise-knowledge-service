@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_settings, require_api_key
+from app.api.deps import get_db, get_settings, require_auth
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.query import QueryRequest, QueryResponse
 from app.services.openai_service import OpenAIService
@@ -14,7 +14,7 @@ from app.services.vector_store_service import VectorStoreService
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}",
     tags=["query"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_auth)],
 )
 
 

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
 
     app_env: str = "dev"
     api_key: str = "changeme"
+    jwt_secret_key: str = "change-this-secret"
+    jwt_algorithm: str = "HS256"
+    jwt_expires_minutes: int = 60
 
     openai_api_key: str = ""
     openai_embed_model: str = "text-embedding-3-small"

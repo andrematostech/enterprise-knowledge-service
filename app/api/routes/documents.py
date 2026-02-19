@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_settings, require_api_key
+from app.api.deps import get_db, get_settings, require_auth
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.schemas.common import Message
@@ -14,7 +14,7 @@ from app.services.document_service import DocumentService
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}/documents",
     tags=["documents"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_auth)],
 )
 
 

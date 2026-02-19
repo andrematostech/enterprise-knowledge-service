@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_settings, require_api_key
+from app.api.deps import get_db, get_settings, require_auth
 from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.ingestion_repository import IngestionRepository
@@ -17,7 +17,7 @@ from app.services.vector_store_service import VectorStoreService
 router = APIRouter(
     prefix="/knowledge-bases/{knowledge_base_id}",
     tags=["ingestion"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_auth)],
 )
 
 

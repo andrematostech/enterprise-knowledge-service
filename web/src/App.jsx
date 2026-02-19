@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FiBarChart2,
   FiChevronLeft,
   FiChevronRight,
   FiFileText,
   FiHome,
+  FiInbox,
   FiMenu,
   FiSearch,
   FiSettings,
@@ -70,7 +71,14 @@ function formatDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString();
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
 }
 
 function getStorageNumber(key, fallback = 0) {
@@ -80,10 +88,38 @@ function getStorageNumber(key, fallback = 0) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function extractDetail(data) {
+  if (!data) return "";
+  const detail = data.detail ?? data.message;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg || item?.message || item?.detail || JSON.stringify(item))
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (typeof detail === "string") return detail;
+  if (typeof detail === "object") {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem("baseUrl") || defaultBaseUrl);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("apiKey") || "changeme");
+  const [token, setToken] = useState(() => localStorage.getItem("kivo_token") || "");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerName, setRegisterName] = useState("");
   const [kbId, setKbId] = useState(() => localStorage.getItem("kbId") || "");
   const [kbList, setKbList] = useState([]);
   const [kbLoading, setKbLoading] = useState(false);
@@ -105,6 +141,15 @@ export default function App() {
   const [ingesting, setIngesting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  const [inboxMessages, setInboxMessages] = useState([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
+  const [inboxError, setInboxError] = useState("");
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [composeScope, setComposeScope] = useState("direct");
+  const [composeRecipient, setComposeRecipient] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+
   const [lastIngestAt, setLastIngestAt] = useState(() => localStorage.getItem("lastIngestAt") || "");
   const [queryCount, setQueryCount] = useState(() => getStorageNumber("queryCount", 0));
   const [lastLatencyMs, setLastLatencyMs] = useState(() => getStorageNumber("lastLatencyMs", 0));
@@ -125,6 +170,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("apiKey", apiKey);
   }, [apiKey]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("kivo_token", token);
+    } else {
+      localStorage.removeItem("kivo_token");
+    }
+  }, [token]);
 
   useEffect(() => {
     localStorage.setItem("kbId", kbId || "");
@@ -156,28 +209,197 @@ export default function App() {
     }, 3200);
   };
 
-  const headers = useMemo(() => {
-    return {
-      "Content-Type": "application/json",
-      "X-API-Key": apiKey
-    };
-  }, [apiKey]);
+  const buildHeaders = ({ json = false, includeAuth = true, includeApiKey = true } = {}) => {
+    const headers = {};
+    if (json) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (includeApiKey && apiKey) {
+      headers["X-API-Key"] = apiKey;
+    }
+    if (includeAuth && token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  };
 
-  const authHeaders = useMemo(() => {
-    return {
-      "X-API-Key": apiKey
-    };
-  }, [apiKey]);
+  const fetchMe = async () => {
+    if (!token) return;
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
+        headers: buildHeaders({ includeApiKey: false })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Authentication failed");
+      }
+      setCurrentUser(data);
+    } catch (err) {
+      console.error(err);
+      pushToast("error", err.message || "Session expired. Please login again.");
+      setToken("");
+      setCurrentUser(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!loginEmail || !loginPassword) {
+      pushToast("error", "Email and password are required.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: "POST",
+        headers: buildHeaders({ json: true, includeAuth: false, includeApiKey: false }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Login failed");
+      }
+      setToken(data.access_token);
+      pushToast("success", "Logged in.");
+      setLoginPassword("");
+    } catch (err) {
+      console.error(err);
+      pushToast("error", err.message || "Login failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!registerEmail || !registerPassword) {
+      pushToast("error", "Email and password are required.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+        method: "POST",
+        headers: buildHeaders({ json: true, includeAuth: false, includeApiKey: false }),
+        body: JSON.stringify({
+          email: registerEmail,
+          password: registerPassword,
+          full_name: registerName || undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Registration failed");
+      }
+      pushToast("success", "Account created. Please log in.");
+      setRegisterPassword("");
+    } catch (err) {
+      console.error(err);
+      pushToast("error", err.message || "Registration failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken("");
+    setCurrentUser(null);
+    pushToast("info", "Logged out.");
+  };
+
+  const fetchInbox = async () => {
+    if (!token) return;
+    setInboxLoading(true);
+    setInboxError("");
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/messages/inbox`, {
+        headers: buildHeaders({ includeApiKey: false })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Failed to load inbox");
+      }
+      const list = Array.isArray(data) ? data : data.items || [];
+      setInboxMessages(list);
+    } catch (err) {
+      console.error(err);
+      setInboxError(err.message || "Failed to load inbox");
+      pushToast("error", err.message || "Failed to load inbox");
+    } finally {
+      setInboxLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!token) {
+      pushToast("error", "Login required to send messages.");
+      return;
+    }
+    if (composeScope === "direct" && !composeRecipient) {
+      pushToast("error", "Recipient email is required.");
+      return;
+    }
+    if (!composeBody.trim()) {
+      pushToast("error", "Message body is required.");
+      return;
+    }
+    try {
+      const payload = {
+        scope: composeScope,
+        recipient_email: composeScope === "direct" ? composeRecipient : undefined,
+        subject: composeSubject || undefined,
+        body: composeBody
+      };
+      const res = await fetch(`${baseUrl}/api/v1/messages`, {
+        method: "POST",
+        headers: buildHeaders({ json: true, includeApiKey: false }),
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Failed to send message");
+      }
+      setComposeSubject("");
+      setComposeBody("");
+      if (composeScope === "direct") {
+        setComposeRecipient("");
+      }
+      pushToast("success", "Message sent.");
+      await fetchInbox();
+    } catch (err) {
+      console.error(err);
+      pushToast("error", err.message || "Failed to send message");
+    }
+  };
+
+  const handleMarkRead = async (messageId) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/messages/${messageId}/read`, {
+        method: "POST",
+        headers: buildHeaders({ includeApiKey: false })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractDetail(data) || "Failed to mark as read");
+      }
+      await fetchInbox();
+    } catch (err) {
+      console.error(err);
+      pushToast("error", err.message || "Failed to mark as read");
+    }
+  };
 
   const fetchKnowledgeBases = async () => {
     if (!baseUrl || !apiKey) return;
     setKbLoading(true);
     setKbError("");
     try {
-      const res = await fetch(`${baseUrl}/api/v1/knowledge-bases`, { headers: authHeaders });
+      const res = await fetch(`${baseUrl}/api/v1/knowledge-bases`, { headers: buildHeaders() });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Failed to load knowledge bases");
+        throw new Error(extractDetail(data) || "Failed to load knowledge bases");
       }
       const list = Array.isArray(data) ? data : data.items || [];
       setKbList(list);
@@ -199,10 +421,10 @@ export default function App() {
     setDocsLoading(true);
     setDocsError("");
     try {
-      const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/documents`, { headers: authHeaders });
+      const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/documents`, { headers: buildHeaders() });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Failed to load documents");
+        throw new Error(extractDetail(data) || "Failed to load documents");
       }
       const list = Array.isArray(data) ? data : data.items || [];
       setDocuments(list);
@@ -216,16 +438,26 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (baseUrl && apiKey) {
+    if (baseUrl && (apiKey || token)) {
       fetchKnowledgeBases();
     }
-  }, [baseUrl, apiKey]);
+  }, [baseUrl, apiKey, token]);
 
   useEffect(() => {
-    if (baseUrl && apiKey && kbId) {
+    if (baseUrl && (apiKey || token) && kbId) {
       fetchDocuments();
     }
-  }, [baseUrl, apiKey, kbId]);
+  }, [baseUrl, apiKey, token, kbId]);
+
+  useEffect(() => {
+    if (token) {
+      fetchMe();
+      fetchInbox();
+    } else {
+      setCurrentUser(null);
+      setInboxMessages([]);
+    }
+  }, [token, baseUrl]);
 
   const runQuery = async () => {
     setError("");
@@ -244,12 +476,12 @@ export default function App() {
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/query`, {
         method: "POST",
-        headers,
+        headers: buildHeaders({ json: true }),
         body: JSON.stringify({ question, top_k: Number(topK) || 5 })
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Request failed");
+        throw new Error(extractDetail(data) || "Request failed");
       }
       setResponse(data);
       const latency = Math.round(performance.now() - start);
@@ -275,12 +507,12 @@ export default function App() {
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases`, {
         method: "POST",
-        headers,
+        headers: buildHeaders({ json: true }),
         body: JSON.stringify({ name: kbName.trim(), description: kbDescription.trim() || undefined })
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Failed to create knowledge base");
+        throw new Error(extractDetail(data) || "Failed to create knowledge base");
       }
       setKbName("");
       setKbDescription("");
@@ -313,12 +545,12 @@ export default function App() {
         formData.append("file", file);
         const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/documents`, {
           method: "POST",
-          headers: authHeaders,
+          headers: buildHeaders(),
           body: formData
         });
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.detail || `Failed to upload ${file.name}`);
+          throw new Error(extractDetail(data) || `Failed to upload ${file.name}`);
         }
       }
       await fetchDocuments();
@@ -343,11 +575,11 @@ export default function App() {
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/documents/${docId}`, {
         method: "DELETE",
-        headers: authHeaders
+        headers: buildHeaders()
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.detail || "Delete failed");
+        throw new Error(extractDetail(data) || "Delete failed");
       }
       await fetchDocuments();
       pushToast("success", "Document deleted.");
@@ -367,11 +599,11 @@ export default function App() {
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/ingest`, {
         method: "POST",
-        headers: authHeaders
+        headers: buildHeaders()
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Ingestion failed");
+        throw new Error(extractDetail(data) || "Ingestion failed");
       }
       const nowIso = new Date().toISOString();
       setLastIngestAt(nowIso);
@@ -390,6 +622,7 @@ export default function App() {
     { id: "home", label: "Home", icon: <FiHome className="nav_icon" /> },
     { id: "query", label: "Query", icon: <FiSearch className="nav_icon" /> },
     { id: "documents", label: "Documents", icon: <FiFileText className="nav_icon" /> },
+    { id: "inbox", label: "Inbox", icon: <FiInbox className="nav_icon" /> },
     { id: "usage", label: "Usage", icon: <FiBarChart2 className="nav_icon" /> },
     { id: "settings", label: "Settings", icon: <FiSettings className="nav_icon" /> }
   ];
@@ -400,18 +633,23 @@ export default function App() {
     home: "Home",
     query: "Query",
     documents: "Documents",
+    inbox: "Inbox",
     usage: "Usage",
     settings: "Settings",
     account: "Account"
   };
 
   const documentsCount = documents.length;
+  const documentsValue = documentsCount === 0 ? "0" : documentsCount;
   const queriesValue = queryCount > 0 ? queryCount : "-";
   const lastLatencyValue = lastLatencyMs > 0 ? `${lastLatencyMs} ms` : "-";
   const avgLatencyValue = avgLatencyMs > 0 ? `${avgLatencyMs} ms` : "-";
 
-  const settingsIncomplete = !baseUrl || !apiKey;
+  const authReady = Boolean(apiKey || token);
+  const settingsIncomplete = !baseUrl || !authReady;
   const kbMissing = !kbId;
+  const isAdmin = Boolean(currentUser?.is_admin);
+  const broadcastMessages = inboxMessages.filter((message) => message.scope === "broadcast");
 
   return (
     <div className="app_shell">
@@ -530,10 +768,45 @@ export default function App() {
                 </Callout>
               </div>
             ) : null}
-            <StatCard label="Documents" value={documentsCount || "-"} />
+            <StatCard label="Documents" value={documentsValue} />
             <StatCard label="Queries" value={queriesValue} />
             <StatCard label="Last indexed" value={formatDateTime(lastIngestAt)} />
             <StatCard label="Latency" value={lastLatencyValue} />
+            <div className="panel wide announcement_panel">
+              <SectionHeader
+                title="Announcements"
+                subtitle="Latest broadcast updates."
+                action={
+                  token ? (
+                    <button className="ghost" type="button" onClick={() => setActiveTab("inbox")}>
+                      View Inbox
+                    </button>
+                  ) : null
+                }
+              />
+              {!token ? (
+                <div className="empty_state">
+                  <p>Login to see announcements.</p>
+                  <div className="empty_state_actions">
+                    <button className="primary" type="button" onClick={() => setActiveTab("account")}>
+                      Go to Account
+                    </button>
+                  </div>
+                </div>
+              ) : broadcastMessages.length ? (
+                <div className="announcement_list">
+                  {broadcastMessages.slice(0, 3).map((message) => (
+                    <div key={message.id} className="announcement_item">
+                      <h4>{message.subject || "Announcement"}</h4>
+                      <p>{message.body}</p>
+                      <span>{formatDateTime(message.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty_state">No announcements yet.</div>
+              )}
+            </div>
             <div className="panel wide empty_state_panel">
               <h3>Connect your backend and upload documents to see metrics.</h3>
               <div className="row">
@@ -733,6 +1006,129 @@ export default function App() {
           </section>
         ) : null}
 
+        {activeTab === "inbox" ? (
+          <section className="inbox_layout">
+            {!token ? (
+              <div className="panel wide">
+                <Callout
+                  title="Login required"
+                  action={
+                    <button className="primary" type="button" onClick={() => setActiveTab("account")}>
+                      Go to Account
+                    </button>
+                  }
+                >
+                  Login to view your inbox and send messages.
+                </Callout>
+              </div>
+            ) : null}
+            <div className="panel inbox_list_panel">
+              <SectionHeader
+                title="Inbox"
+                subtitle="Direct messages and broadcasts."
+                action={
+                  token ? (
+                    <button className="ghost" type="button" onClick={fetchInbox} disabled={inboxLoading}>
+                      {inboxLoading ? "Refreshing..." : "Refresh"}
+                    </button>
+                  ) : null
+                }
+              />
+              {inboxError ? <div className="alert error">{inboxError}</div> : null}
+              {inboxLoading ? (
+                <div className="empty_state">Loading messages...</div>
+              ) : inboxMessages.length ? (
+                <div className="message_list">
+                  {inboxMessages.map((message) => {
+                    const unread = message.scope === "direct" && !message.read_at;
+                    return (
+                      <button
+                        key={message.id}
+                        className={`message_row ${unread ? "unread" : ""}`}
+                        type="button"
+                        onClick={() => setSelectedMessage(message)}
+                      >
+                        <div>
+                          <p className="message_subject">{message.subject || (message.scope === "broadcast" ? "Announcement" : "Direct message")}</p>
+                          <p className="message_preview">{message.body}</p>
+                        </div>
+                        <div className="message_meta">
+                          <span>{message.scope === "broadcast" ? "Broadcast" : "Direct"}</span>
+                          <span>{formatDateTime(message.created_at)}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty_state">No messages yet.</div>
+              )}
+            </div>
+
+            <div className="inbox_side">
+              <div className="panel inbox_detail_panel">
+                <SectionHeader title="Message" subtitle="Select a message to view details." />
+                {selectedMessage ? (
+                  <div className="message_detail">
+                    <h3>{selectedMessage.subject || (selectedMessage.scope === "broadcast" ? "Announcement" : "Direct message")}</h3>
+                    <p className="message_body">{selectedMessage.body}</p>
+                    <div className="message_detail_meta">
+                      <span>From: {selectedMessage.sender_email || "System"}</span>
+                      <span>{formatDateTime(selectedMessage.created_at)}</span>
+                    </div>
+                    {selectedMessage.scope === "direct" && !selectedMessage.read_at ? (
+                      <button className="ghost" type="button" onClick={() => handleMarkRead(selectedMessage.id)}>
+                        Mark as read
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="empty_state">Select a message to view details.</div>
+                )}
+              </div>
+
+              <div className="panel inbox_compose_panel">
+                <SectionHeader title="Compose" subtitle="Send a direct message or broadcast." />
+                {!token ? (
+                  <div className="empty_state">Login to send messages.</div>
+                ) : (
+                  <div className="compose_form">
+                    <div className="field">
+                      <label>Scope</label>
+                      <select
+                        className="select_input"
+                        value={composeScope}
+                        onChange={(e) => setComposeScope(e.target.value)}
+                      >
+                        <option value="direct">Direct</option>
+                        {isAdmin ? <option value="broadcast">Broadcast</option> : null}
+                      </select>
+                      {!isAdmin ? <span className="hint">Broadcast is available for the admin account.</span> : null}
+                    </div>
+                    {composeScope === "direct" ? (
+                      <div className="field">
+                        <label>Recipient email</label>
+                        <input value={composeRecipient} onChange={(e) => setComposeRecipient(e.target.value)} placeholder="name@company.com" />
+                      </div>
+                    ) : null}
+                    <div className="field">
+                      <label>Subject</label>
+                      <input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Optional subject" />
+                    </div>
+                    <div className="field">
+                      <label>Message</label>
+                      <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={4} />
+                    </div>
+                    <button className="primary" type="button" onClick={handleSendMessage}>
+                      Send message
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {activeTab === "usage" ? (
           <section className="grid">
             {settingsIncomplete ? (
@@ -871,21 +1267,61 @@ export default function App() {
         {activeTab === "account" ? (
           <section className="grid">
             <div className="panel wide dark_panel">
-              <SectionHeader title="Account" subtitle="Profile and billing placeholders." />
-              <div className="account_grid">
-                <div className="panel profile_card">
-                  <p className="stat_label">Name</p>
-                  <p className="stat_value">Admin</p>
-                  <p className="stat_label">Role</p>
-                  <p className="stat_value">Operations</p>
+              <SectionHeader title="Account" subtitle="Login or register to unlock messaging." />
+              {!token ? (
+                <div className="account_forms">
+                  <div className="panel account_panel">
+                    <SectionHeader title="Login" subtitle="Access your account." />
+                    <div className="field">
+                      <label>Email</label>
+                      <input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@company.com" />
+                    </div>
+                    <div className="field">
+                      <label>Password</label>
+                      <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••" />
+                    </div>
+                    <button className="primary" type="button" onClick={handleLogin} disabled={authLoading}>
+                      {authLoading ? "Signing in..." : "Login"}
+                    </button>
+                  </div>
+                  <div className="panel account_panel">
+                    <SectionHeader title="Register" subtitle="Create a new account." />
+                    <div className="field">
+                      <label>Full name</label>
+                      <input value={registerName} onChange={(e) => setRegisterName(e.target.value)} placeholder="Your name" />
+                    </div>
+                    <div className="field">
+                      <label>Email</label>
+                      <input value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} placeholder="you@company.com" />
+                    </div>
+                    <div className="field">
+                      <label>Password</label>
+                      <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} placeholder="••••••••" />
+                    </div>
+                    <button className="primary" type="button" onClick={handleRegister} disabled={authLoading}>
+                      {authLoading ? "Creating..." : "Register"}
+                    </button>
+                  </div>
                 </div>
-                <div className="panel profile_card">
-                  <p className="stat_label">Billing</p>
-                  <p className="stat_value">-</p>
-                  <p className="stat_label">Plan</p>
-                  <p className="stat_value">-</p>
+              ) : (
+                <div className="account_grid">
+                  <div className="panel profile_card">
+                    <p className="stat_label">Name</p>
+                    <p className="stat_value">{currentUser?.full_name || "—"}</p>
+                    <p className="stat_label">Email</p>
+                    <p className="stat_value">{currentUser?.email || "—"}</p>
+                  </div>
+                  <div className="panel profile_card">
+                    <p className="stat_label">Role</p>
+                    <p className="stat_value">{isAdmin ? "Admin" : "Member"}</p>
+                    <p className="stat_label">Status</p>
+                    <p className="stat_value">{currentUser?.is_active ? "Active" : "Inactive"}</p>
+                    <button className="ghost" type="button" onClick={handleLogout}>
+                      Logout
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
         ) : null}

@@ -3,5 +3,7 @@ from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.ingestion import Ingestion
 from app.models.knowledge_base import KnowledgeBase
+from app.models.message import Message
+from app.models.user import User
 
-__all__ = ["Base", "Chunk", "Document", "Ingestion", "KnowledgeBase"]
+__all__ = ["Base", "Chunk", "Document", "Ingestion", "KnowledgeBase", "Message", "User"]
