@@ -779,7 +779,7 @@ textarea {
 }
 
 .primary:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(0);
   background: linear-gradient(135deg, #69b5ff, #3f7dff);
 }
 

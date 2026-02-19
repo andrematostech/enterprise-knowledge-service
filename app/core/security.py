@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from app.core.config import Settings
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def api_key_matches(provided: str, expected: str) -> bool:
