@@ -881,6 +881,53 @@ textarea {
   text-align: center;
 }
 
+.empty_state p {
+  margin: 0 0 12px;
+}
+
+.empty_state_actions {
+  display: flex;
+  justify-content: center;
+}
+
+.toast_stack {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 60;
+}
+
+.toast {
+  background: rgba(12, 18, 32, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #eaf0ff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  min-width: 220px;
+  box-shadow: 0 12px 30px rgba(8, 12, 22, 0.4);
+}
+
+.toast p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.toast.success {
+  border-color: rgba(74, 163, 255, 0.4);
+}
+
+.toast.error {
+  border-color: rgba(255, 77, 77, 0.45);
+  color: #ffd4d4;
+}
+
+.toast.info {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .footer {
   color: #c7d0e7;
   font-size: 0.9rem;

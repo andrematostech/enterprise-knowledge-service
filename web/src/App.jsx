@@ -54,6 +54,18 @@ function StatCard({ label, value }) {
   );
 }
 
+function ToastStack({ toasts }) {
+  return (
+    <div className="toast_stack" aria-live="polite" aria-atomic="false">
+      {toasts.map((toast) => (
+        <div key={toast.id} className={`toast ${toast.type || "info"}`} role="status">
+          <p>{toast.message}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function formatDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -91,7 +103,7 @@ export default function App() {
   const [docsError, setDocsError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
-  const [docsMessage, setDocsMessage] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   const [lastIngestAt, setLastIngestAt] = useState(() => localStorage.getItem("lastIngestAt") || "");
   const [queryCount, setQueryCount] = useState(() => getStorageNumber("queryCount", 0));
@@ -100,6 +112,9 @@ export default function App() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
 
   const fileInputRef = useRef(null);
 
@@ -133,6 +148,14 @@ export default function App() {
     localStorage.setItem("avgLatencyMs", String(avgLatencyMs));
   }, [avgLatencyMs]);
 
+  const pushToast = (type, message) => {
+    const id = `${Date.now()}-${toastIdRef.current++}`;
+    setToasts((prev) => [...prev, { id, type, message }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3200);
+  };
+
   const headers = useMemo(() => {
     return {
       "Content-Type": "application/json",
@@ -163,7 +186,9 @@ export default function App() {
         setKbId(list[0].id);
       }
     } catch (err) {
+      console.error(err);
       setKbError(err.message || "Failed to load knowledge bases");
+      pushToast("error", err.message || "Failed to load knowledge bases");
     } finally {
       setKbLoading(false);
     }
@@ -182,7 +207,9 @@ export default function App() {
       const list = Array.isArray(data) ? data : data.items || [];
       setDocuments(list);
     } catch (err) {
+      console.error(err);
       setDocsError(err.message || "Failed to load documents");
+      pushToast("error", err.message || "Failed to load documents");
     } finally {
       setDocsLoading(false);
     }
@@ -231,8 +258,11 @@ export default function App() {
       setQueryCount(nextCount);
       setLastLatencyMs(latency);
       setAvgLatencyMs(nextAvg);
+      pushToast("success", "Answer ready.");
     } catch (err) {
+      console.error(err);
       setError(err.message || "Unknown error");
+      pushToast("error", err.message || "Query failed");
     } finally {
       setLoading(false);
     }
@@ -259,8 +289,11 @@ export default function App() {
       if (data?.id) {
         setKbId(data.id);
       }
+      pushToast("success", "Knowledge base created.");
     } catch (err) {
+      console.error(err);
       setKbError(err.message || "Failed to create knowledge base");
+      pushToast("error", err.message || "Failed to create knowledge base");
     } finally {
       setKbCreating(false);
     }
@@ -273,7 +306,6 @@ export default function App() {
       return;
     }
     setUploading(true);
-    setDocsMessage("");
     setDocsError("");
     try {
       for (const file of files) {
@@ -289,13 +321,15 @@ export default function App() {
           throw new Error(data.detail || `Failed to upload ${file.name}`);
         }
       }
-      setDocsMessage("Upload complete.");
       await fetchDocuments();
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      pushToast("success", "Documents uploaded.");
     } catch (err) {
+      console.error(err);
       setDocsError(err.message || "Upload failed");
+      pushToast("error", err.message || "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -305,6 +339,7 @@ export default function App() {
     if (!kbId) return;
     const confirmed = window.confirm("Delete this document?");
     if (!confirmed) return;
+    setDeletingId(docId);
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/documents/${docId}`, {
         method: "DELETE",
@@ -315,15 +350,19 @@ export default function App() {
         throw new Error(data.detail || "Delete failed");
       }
       await fetchDocuments();
+      pushToast("success", "Document deleted.");
     } catch (err) {
+      console.error(err);
       setDocsError(err.message || "Delete failed");
+      pushToast("error", err.message || "Delete failed");
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const handleIngest = async () => {
     if (!kbId) return;
     setIngesting(true);
-    setDocsMessage("");
     setDocsError("");
     try {
       const res = await fetch(`${baseUrl}/api/v1/knowledge-bases/${kbId}/ingest`, {
@@ -336,10 +375,12 @@ export default function App() {
       }
       const nowIso = new Date().toISOString();
       setLastIngestAt(nowIso);
-      setDocsMessage("Ingestion started.");
       await fetchDocuments();
+      pushToast("success", "Ingestion started.");
     } catch (err) {
+      console.error(err);
       setDocsError(err.message || "Ingestion failed");
+      pushToast("error", err.message || "Ingestion failed");
     } finally {
       setIngesting(false);
     }
@@ -364,7 +405,7 @@ export default function App() {
     account: "Account"
   };
 
-  const documentsCount = documents.length ? documents.length : "-";
+  const documentsCount = documents.length;
   const queriesValue = queryCount > 0 ? queryCount : "-";
   const lastLatencyValue = lastLatencyMs > 0 ? `${lastLatencyMs} ms` : "-";
   const avgLatencyValue = avgLatencyMs > 0 ? `${avgLatencyMs} ms` : "-";
@@ -462,21 +503,34 @@ export default function App() {
 
         {activeTab === "home" ? (
           <section className="dashboard_grid">
-            {settingsIncomplete || kbMissing ? (
+            {settingsIncomplete ? (
               <div className="panel wide">
                 <Callout
-                  title="Finish setup"
+                  title="Complete Settings"
                   action={
                     <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
                       Go to Settings
                     </button>
                   }
                 >
-                  Set your API connection and select a knowledge base to unlock metrics.
+                  Complete Settings to connect your backend.
+                </Callout>
+              </div>
+            ) : kbMissing ? (
+              <div className="panel wide">
+                <Callout
+                  title="Select a knowledge base"
+                  action={
+                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
+                      Go to Settings
+                    </button>
+                  }
+                >
+                  Select or create a knowledge base to unlock metrics.
                 </Callout>
               </div>
             ) : null}
-            <StatCard label="Documents" value={documentsCount} />
+            <StatCard label="Documents" value={documentsCount || "-"} />
             <StatCard label="Queries" value={queriesValue} />
             <StatCard label="Last indexed" value={formatDateTime(lastIngestAt)} />
             <StatCard label="Latency" value={lastLatencyValue} />
@@ -489,6 +543,11 @@ export default function App() {
                 <button className="ghost" type="button" onClick={() => setActiveTab("documents")}>
                   Manage Documents
                 </button>
+                {(settingsIncomplete || kbMissing) ? (
+                  <button className="ghost" type="button" onClick={() => setActiveTab("settings")}>
+                    Go to Settings
+                  </button>
+                ) : null}
               </div>
             </div>
           </section>
@@ -506,9 +565,20 @@ export default function App() {
                   </button>
                 }
               />
-              {kbMissing ? (
+              {settingsIncomplete ? (
                 <Callout
-                  title="Knowledge base required"
+                  title="Complete Settings"
+                  action={
+                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
+                      Go to Settings
+                    </button>
+                  }
+                >
+                  Complete Settings to connect your backend.
+                </Callout>
+              ) : kbMissing ? (
+                <Callout
+                  title="Select a knowledge base"
                   action={
                     <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
                       Go to Settings
@@ -517,6 +587,9 @@ export default function App() {
                 >
                   Select or create a knowledge base before running queries.
                 </Callout>
+              ) : null}
+              {documentsCount === 0 && !settingsIncomplete && !kbMissing ? (
+                <div className="hint">Upload and ingest documents for best results.</div>
               ) : null}
               <div className="field">
                 <label>Question</label>
@@ -529,7 +602,7 @@ export default function App() {
               </div>
               <div className="row">
                 <div className="field compact">
-                  <label>Top K</label>
+                  <label>Retrieval depth</label>
                   <input
                     type="number"
                     min={1}
@@ -539,7 +612,7 @@ export default function App() {
                   />
                 </div>
                 <button className="primary" onClick={runQuery} disabled={loading} type="button">
-                  {loading ? "Querying..." : "Run Query"}
+                  {loading ? "Asking..." : "Ask"}
                 </button>
               </div>
               {error ? <div className="alert error">{error}</div> : null}
@@ -580,14 +653,14 @@ export default function App() {
               />
               {settingsIncomplete ? (
                 <Callout
-                  title="Connection required"
+                  title="Complete Settings"
                   action={
                     <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
                       Go to Settings
                     </button>
                   }
                 >
-                  Set your API base URL and API key before uploading documents.
+                  Complete Settings to connect your backend.
                 </Callout>
               ) : kbMissing ? (
                 <Callout
@@ -616,19 +689,21 @@ export default function App() {
                   {uploading ? "Uploading..." : "Upload documents"}
                 </button>
                 <button className="ghost" type="button" onClick={handleIngest} disabled={ingesting || settingsIncomplete || kbMissing}>
-                  {ingesting ? "Ingesting..." : "Ingest knowledge base"}
+                  {ingesting ? "Ingesting..." : "Ingest"}
                 </button>
               </div>
 
-              {docsMessage ? <div className="alert success">{docsMessage}</div> : null}
               {docsError ? <div className="alert error">{docsError}</div> : null}
 
               {docsLoading ? (
                 <div className="empty_state">Loading documents...</div>
               ) : documents.length ? (
                 <div className="doc_list">
-                  {documents.map((doc) => (
-                    <div key={doc.id || doc.document_id || doc.filename} className="doc_row">
+                  {documents.map((doc) => {
+                    const docKey = doc.id || doc.document_id || doc.filename;
+                    const isDeleting = deletingId === (doc.id || doc.document_id);
+                    return (
+                    <div key={docKey} className="doc_row">
                       <div>
                         <p className="doc_name">{doc.filename || doc.name || "Untitled"}</p>
                         <p className="doc_meta">{doc.status || "Ready"}</p>
@@ -636,15 +711,23 @@ export default function App() {
                       </div>
                       <div className="doc_row_actions">
                         <p className="doc_chunks">{doc.chunks ?? doc.chunk_count ?? "-"} chunks</p>
-                        <button className="danger" type="button" onClick={() => handleDelete(doc.id || doc.document_id)}>
-                          Delete
+                        <button className="danger" type="button" onClick={() => handleDelete(doc.id || doc.document_id)} disabled={isDeleting}>
+                          {isDeleting ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="empty_state">No documents uploaded yet.</div>
+                <div className="empty_state">
+                  <p>No documents uploaded yet.</p>
+                  <div className="empty_state_actions">
+                    <button className="primary" type="button" onClick={() => fileInputRef.current?.click()} disabled={settingsIncomplete || kbMissing}>
+                      Upload documents
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </section>
@@ -652,6 +735,33 @@ export default function App() {
 
         {activeTab === "usage" ? (
           <section className="grid">
+            {settingsIncomplete ? (
+              <div className="panel wide">
+                <Callout
+                  title="Complete Settings"
+                  action={
+                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
+                      Go to Settings
+                    </button>
+                  }
+                >
+                  Complete Settings to connect your backend.
+                </Callout>
+              </div>
+            ) : kbMissing ? (
+              <div className="panel wide">
+                <Callout
+                  title="Select a knowledge base"
+                  action={
+                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
+                      Go to Settings
+                    </button>
+                  }
+                >
+                  Select or create a knowledge base to see usage.
+                </Callout>
+              </div>
+            ) : null}
             <div className="panel wide dark_panel">
               <SectionHeader title="Usage" subtitle="Client-side metrics from your latest activity." />
               <div className="usage_grid">
@@ -697,7 +807,7 @@ export default function App() {
                   subtitle="Select an existing knowledge base or create a new one."
                   action={
                     <button className="ghost" type="button" onClick={fetchKnowledgeBases} disabled={kbLoading || settingsIncomplete}>
-                      Refresh
+                      {kbLoading ? "Refreshing..." : "Refresh"}
                     </button>
                   }
                 />
@@ -780,6 +890,7 @@ export default function App() {
           </section>
         ) : null}
       </main>
+      <ToastStack toasts={toasts} />
     </div>
   );
 }
