@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FiBarChart2,
+  FiClock,
   FiChevronLeft,
   FiChevronRight,
   FiFileText,
@@ -702,7 +703,7 @@ export default function App() {
 
   const navItems = [
     { id: "home", label: "Home", icon: <FiHome className="nav_icon" /> },
-    { id: "query", label: "Query", icon: <FiSearch className="nav_icon" /> },
+    { id: "query", label: "Ask AI", icon: <FiSearch className="nav_icon" /> },
     { id: "documents", label: "Documents", icon: <FiFileText className="nav_icon" /> },
     { id: "inbox", label: "Inbox", icon: <FiInbox className="nav_icon" /> },
     { id: "usage", label: "Usage", icon: <FiBarChart2 className="nav_icon" /> },
@@ -713,7 +714,7 @@ export default function App() {
 
   const pageTitleMap = {
     home: "Home",
-    query: "Query",
+    query: "Ask AI",
     documents: "Documents",
     inbox: "Inbox",
     usage: "Usage",
@@ -726,9 +727,12 @@ export default function App() {
   const queriesValue = queryCount > 0 ? queryCount : "-";
   const lastLatencyValue = lastLatencyMs > 0 ? `${lastLatencyMs} ms` : "-";
   const avgLatencyValue = avgLatencyMs > 0 ? `${avgLatencyMs} ms` : "-";
+  const activeKb = kbList.find((kb) => kb.id === kbId);
+  const activeKbName = activeKb?.name || "—";
 
   const authReady = Boolean(apiKey || token);
   const settingsIncomplete = !baseUrl || !authReady;
+  const connectionState = settingsIncomplete ? "Not configured" : "Configured";
   const kbMissing = !kbId;
   const isAdmin = Boolean(currentUser?.is_admin);
   const userInitials = getInitials(currentUser?.full_name || currentUser?.email || "Admin");
@@ -746,7 +750,7 @@ export default function App() {
             {sidebarCollapsed ? (
               <span className="brand_ai">K</span>
             ) : (
-              <>Kivo</>
+              <span className="brand_full">KIVO</span>
             )}
           </div>
           <button
@@ -834,109 +838,143 @@ export default function App() {
           <div className="topbar_right" />
         </header>
 
-        {activeTab === "home" ? (
-          <section className="dashboard_grid">
-            {settingsIncomplete ? (
-              <div className="panel wide">
-                <Callout
-                  title="Complete Settings"
-                  action={
-                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
-                      Go to Settings
-                    </button>
-                  }
-                >
-                  Complete Settings to connect your backend.
-                </Callout>
+                {activeTab === "home" ? (
+          <section className="home_layout">
+            <div className="home_main">
+              <div className="home_header">
+                <div>
+                  <h2>Home</h2>
+                  <p>Overview of your workspace</p>
+                </div>
               </div>
-            ) : kbMissing ? (
-              <div className="panel wide">
-                <Callout
-                  title="Select a knowledge base"
-                  action={
-                    <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
-                      Go to Settings
-                    </button>
-                  }
-                >
-                  Select or create a knowledge base to unlock metrics.
-                </Callout>
+              {settingsIncomplete ? (
+                <div className="home_banner">
+                  <span>Connect your backend to start using Kivo.</span>
+                  <button className="primary" type="button" onClick={() => setActiveTab("settings")}>
+                    Go to Settings
+                  </button>
+                </div>
+              ) : null}
+              <div className="kpi_grid">
+                <div className="kpi_card">
+                  <div className="kpi_icon">
+                    <FiFileText />
+                  </div>
+                  <div className="kpi_content">
+                    <span className="kpi_label">Documents</span>
+                    <span className="kpi_value">{documentsValue}</span>
+                    <span className="kpi_sub">{documentsCount ? `${documentsCount} total` : "No documents yet"}</span>
+                  </div>
+                </div>
+                <div className="kpi_card">
+                  <div className="kpi_icon">
+                    <FiSearch />
+                  </div>
+                  <div className="kpi_content">
+                    <span className="kpi_label">Queries</span>
+                    <span className="kpi_value">{queriesValue}</span>
+                    <span className="kpi_sub">{avgLatencyMs ? `Avg ${avgLatencyMs} ms` : "Ready for search"}</span>
+                  </div>
+                </div>
+                <div className="kpi_card">
+                  <div className="kpi_icon">
+                    <FiClock />
+                  </div>
+                  <div className="kpi_content">
+                    <span className="kpi_label">Last indexed</span>
+                    <span className="kpi_value">{formatDateTime(lastIngestAt)}</span>
+                    <span className="kpi_sub">{lastIngestAt ? "Last run" : "Not indexed yet"}</span>
+                  </div>
+                </div>
+                <div className="kpi_card">
+                  <div className="kpi_icon">
+                    <FiBarChart2 />
+                  </div>
+                  <div className="kpi_content">
+                    <span className="kpi_label">Latency</span>
+                    <span className="kpi_value">{lastLatencyValue}</span>
+                    <span className="kpi_sub">{avgLatencyMs ? `Avg ${avgLatencyMs} ms` : "No data yet"}</span>
+                  </div>
+                </div>
               </div>
-            ) : null}
-            <StatCard label="Documents" value={documentsValue} />
-            <StatCard label="Queries" value={queriesValue} />
-            <StatCard label="Last indexed" value={formatDateTime(lastIngestAt)} />
-            <StatCard label="Latency" value={lastLatencyValue} />
-            <div className="panel wide announcement_panel">
-              <SectionHeader
-                title="Announcements"
-                subtitle="Latest broadcast updates."
-                action={
-                  token ? (
+              <div className="panel announcement_panel">
+                <div className="announcement_header_row">
+                  <div>
+                    <h3>Announcements</h3>
+                    <p>Latest broadcast updates.</p>
+                  </div>
+                  {token ? (
                     <button className="ghost" type="button" onClick={() => setActiveTab("inbox")}>
                       View Inbox
                     </button>
-                  ) : null
-                }
-              />
-              {!token ? (
-                <div className="empty_state">
-                  <p>Login to see announcements.</p>
-                  <div className="empty_state_actions">
-                    <button className="primary" type="button" onClick={() => setActiveTab("account")}>
-                      Go to Account
-                    </button>
-                  </div>
+                  ) : null}
                 </div>
-              ) : broadcastMessages.length ? (
-                <div className="announcement_list">
-                  {broadcastMessages.slice(0, 3).map((message) => (
-                    <div key={message.id} className="announcement_item">
-                      <div className="announcement_header">
-                        <div className="announcement_avatar">
+                {!token ? (
+                  <div className="empty_state">
+                    <p>Login to see announcements.</p>
+                    <div className="empty_state_actions">
+                      <button className="primary" type="button" onClick={() => setActiveTab("account")}>
+                        Go to Account
+                      </button>
+                    </div>
+                  </div>
+                ) : broadcastMessages.length ? (
+                  <div className="announcement_compact_list">
+                    {broadcastMessages.slice(0, 3).map((message) => (
+                      <div key={message.id} className="announcement_row">
+                        <div className="announcement_avatar small">
                           {message.sender_avatar_url ? (
                             <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
                           ) : (
                             getInitials(message.sender_name || message.sender_email || "")
                           )}
                         </div>
-                        <div className="announcement_text">
-                          <h4>{message.subject || "Announcement"}</h4>
-                          <p>{message.body}</p>
+                        <div className="announcement_row_body">
+                          <div className="announcement_row_title">{message.subject || "Announcement"}</div>
+                          <div className="announcement_row_preview">{message.body}</div>
+                        </div>
+                        <div className="announcement_row_meta">
+                          <span>{message.sender_name || message.sender_email || "System"}</span>
                           <span>{formatDateTime(message.created_at)}</span>
                         </div>
-                        <div className="announcement_meta">
-                          <span>{message.sender_name || message.sender_email || "Unknown"}</span>
-                          {message.sender_position ? <span>{message.sender_position}</span> : null}
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty_state">No announcements yet.</div>
-              )}
-            </div>
-            <div className="panel wide empty_state_panel">
-              <h3>Connect your backend and upload documents to see metrics.</h3>
-              <div className="row">
-                <button className="primary" type="button" onClick={() => setActiveTab("query")}>
-                  Go to Query
-                </button>
-                <button className="ghost" type="button" onClick={() => setActiveTab("documents")}>
-                  Manage Documents
-                </button>
-                {(settingsIncomplete || kbMissing) ? (
-                  <button className="ghost" type="button" onClick={() => setActiveTab("settings")}>
-                    Go to Settings
-                  </button>
-                ) : null}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty_state">No announcements yet.</div>
+                )}
               </div>
             </div>
+            <aside className="home_rail">
+              <div className="panel status_card">
+                <h3>Status</h3>
+                <div className="status_rows">
+                  <div className="status_row">
+                    <span>Connection</span>
+                    <strong>{connectionState}</strong>
+                  </div>
+                  <div className="status_row">
+                    <span>Knowledge base</span>
+                    <strong>{activeKbName}</strong>
+                  </div>
+                  <div className="status_row">
+                    <span>Documents</span>
+                    <strong>{documentsCount}</strong>
+                  </div>
+                </div>
+              </div>
+              <div className="panel tips_card">
+                <h3>Tips</h3>
+                <ul className="tips_list">
+                  <li>Upload files, then run ingest to update answers.</li>
+                  <li>Use specific queries for more accurate retrieval.</li>
+                  <li>Check Inbox for broadcasts and team updates.</li>
+                </ul>
+              </div>
+            </aside>
           </section>
         ) : null}
-
-        {activeTab === "query" ? (
+{activeTab === "query" ? (
           <section className="home_panels">
             <div className="panel query_panel">
               <SectionHeader
@@ -1530,3 +1568,5 @@ export default function App() {
     </div>
   );
 }
+
+
