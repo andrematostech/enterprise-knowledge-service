@@ -21,6 +21,8 @@ class MessageRead(BaseModel):
     read_at: datetime | None = None
     sender_email: EmailStr | None = None
     sender_name: str | None = None
+    sender_position: str | None = None
+    sender_avatar_url: str | None = None
     recipient_email: EmailStr | None = None
 
     model_config = {"from_attributes": True}

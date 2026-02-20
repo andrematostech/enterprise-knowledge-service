@@ -8,6 +8,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str | None = None
+    position: str | None = None
+    avatar_url: str | None = None
 
 
 class UserLogin(BaseModel):
@@ -24,6 +26,8 @@ class UserRead(BaseModel):
     id: uuid.UUID
     email: EmailStr
     full_name: str | None = None
+    position: str | None = None
+    avatar_url: str | None = None
     is_active: bool
     created_at: datetime
     is_admin: bool = False

@@ -88,6 +88,14 @@ function getStorageNumber(key, fallback = 0) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function getInitials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "A";
+  const first = parts[0][0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return `${first}${last}`.toUpperCase() || "A";
+}
+
 function extractDetail(data) {
   if (!data) return "";
   const detail = data.detail ?? data.message;
@@ -120,6 +128,12 @@ export default function App() {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
+  const [registerPosition, setRegisterPosition] = useState("");
+  const [registerAvatarFile, setRegisterAvatarFile] = useState(null);
+  const [registerAvatarPreview, setRegisterAvatarPreview] = useState("");
+  const [registerAvatarZoom, setRegisterAvatarZoom] = useState(1);
+  const [registerAvatarX, setRegisterAvatarX] = useState(50);
+  const [registerAvatarY, setRegisterAvatarY] = useState(50);
   const [kbId, setKbId] = useState(() => localStorage.getItem("kbId") || "");
   const [kbList, setKbList] = useState([]);
   const [kbLoading, setKbLoading] = useState(false);
@@ -140,6 +154,7 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [inboxMessages, setInboxMessages] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(false);
@@ -201,12 +216,47 @@ export default function App() {
     localStorage.setItem("avgLatencyMs", String(avgLatencyMs));
   }, [avgLatencyMs]);
 
+  useEffect(() => {
+    if (!registerAvatarFile) {
+      setRegisterAvatarPreview("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(registerAvatarFile);
+    setRegisterAvatarPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [registerAvatarFile]);
+
   const pushToast = (type, message) => {
     const id = `${Date.now()}-${toastIdRef.current++}`;
     setToasts((prev) => [...prev, { id, type, message }]);
     window.setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, 3200);
+  };
+
+  const buildAvatarDataUrl = async () => {
+    if (!registerAvatarPreview) return null;
+    const img = new Image();
+    img.src = registerAvatarPreview;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+    const size = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const minDim = Math.min(img.width, img.height);
+    const zoom = Math.max(1, Number(registerAvatarZoom) || 1);
+    const cropSize = minDim / zoom;
+    const maxX = img.width - cropSize;
+    const maxY = img.height - cropSize;
+    const cropX = Math.max(0, Math.min(maxX, (maxX * registerAvatarX) / 100));
+    const cropY = Math.max(0, Math.min(maxY, (maxY * registerAvatarY) / 100));
+    ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, size, size);
+    return canvas.toDataURL("image/jpeg", 0.92);
   };
 
   const buildHeaders = ({ json = false, includeAuth = true, includeApiKey = true } = {}) => {
@@ -279,13 +329,16 @@ export default function App() {
     }
     setAuthLoading(true);
     try {
+      const avatarUrl = await buildAvatarDataUrl();
       const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
         method: "POST",
         headers: buildHeaders({ json: true, includeAuth: false, includeApiKey: false }),
         body: JSON.stringify({
           email: registerEmail,
           password: registerPassword,
-          full_name: registerName || undefined
+          full_name: registerName || undefined,
+          position: registerPosition || undefined,
+          avatar_url: avatarUrl || undefined
         })
       });
       const data = await res.json();
@@ -294,6 +347,11 @@ export default function App() {
       }
       pushToast("success", "Account created. Please log in.");
       setRegisterPassword("");
+      setRegisterPosition("");
+      setRegisterAvatarFile(null);
+      setRegisterAvatarZoom(1);
+      setRegisterAvatarX(50);
+      setRegisterAvatarY(50);
     } catch (err) {
       console.error(err);
       pushToast("error", err.message || "Registration failed");
@@ -567,6 +625,30 @@ export default function App() {
     }
   };
 
+  const handleDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (settingsIncomplete || kbMissing) return;
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) {
+      handleUpload(files);
+    }
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (settingsIncomplete || kbMissing) return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
   const handleDelete = async (docId) => {
     if (!kbId) return;
     const confirmed = window.confirm("Delete this document?");
@@ -649,6 +731,8 @@ export default function App() {
   const settingsIncomplete = !baseUrl || !authReady;
   const kbMissing = !kbId;
   const isAdmin = Boolean(currentUser?.is_admin);
+  const userInitials = getInitials(currentUser?.full_name || currentUser?.email || "Admin");
+  const userAvatarUrl = currentUser?.avatar_url || "";
   const broadcastMessages = inboxMessages.filter((message) => message.scope === "broadcast");
 
   return (
@@ -706,17 +790,36 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar_footer">
-          <TabButton
-            active={activeTab === accountItem.id}
-            onClick={() => {
-              setActiveTab(accountItem.id);
-              setMobileSidebarOpen(false);
-            }}
-            collapsed={sidebarCollapsed}
-          >
-            {accountItem.icon}
-            <span className="nav_label">{accountItem.label}</span>
-          </TabButton>
+          {token ? (
+            <button
+              className="sidebar_profile"
+              type="button"
+              onClick={() => {
+                setActiveTab(accountItem.id);
+                setMobileSidebarOpen(false);
+              }}
+            >
+              <div className="avatar">
+                {userAvatarUrl ? <img src={userAvatarUrl} alt="Avatar" /> : userInitials}
+              </div>
+              <div className="sidebar_profile_text">
+                <p>{currentUser?.full_name || "Admin"}</p>
+                <span>{currentUser?.position || "Operations"}</span>
+              </div>
+            </button>
+          ) : (
+            <TabButton
+              active={activeTab === accountItem.id}
+              onClick={() => {
+                setActiveTab(accountItem.id);
+                setMobileSidebarOpen(false);
+              }}
+              collapsed={sidebarCollapsed}
+            >
+              {accountItem.icon}
+              <span className="nav_label">{accountItem.label}</span>
+            </TabButton>
+          )}
         </div>
       </aside>
 
@@ -728,15 +831,7 @@ export default function App() {
             </button>
             <p className="page_title">{pageTitleMap[activeTab] || "Home"}</p>
           </div>
-          <div className="topbar_right">
-            <div className="user_chip compact">
-              <div className="avatar">A</div>
-              <div className="user_details">
-                <p>Admin</p>
-                <span>Operations</span>
-              </div>
-            </div>
-          </div>
+          <div className="topbar_right" />
         </header>
 
         {activeTab === "home" ? (
@@ -797,9 +892,24 @@ export default function App() {
                 <div className="announcement_list">
                   {broadcastMessages.slice(0, 3).map((message) => (
                     <div key={message.id} className="announcement_item">
-                      <h4>{message.subject || "Announcement"}</h4>
-                      <p>{message.body}</p>
-                      <span>{formatDateTime(message.created_at)}</span>
+                      <div className="announcement_header">
+                        <div className="announcement_avatar">
+                          {message.sender_avatar_url ? (
+                            <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
+                          ) : (
+                            getInitials(message.sender_name || message.sender_email || "")
+                          )}
+                        </div>
+                        <div className="announcement_text">
+                          <h4>{message.subject || "Announcement"}</h4>
+                          <p>{message.body}</p>
+                          <span>{formatDateTime(message.created_at)}</span>
+                        </div>
+                        <div className="announcement_meta">
+                          <span>{message.sender_name || message.sender_email || "Unknown"}</span>
+                          {message.sender_position ? <span>{message.sender_position}</span> : null}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -885,6 +995,7 @@ export default function App() {
                   />
                 </div>
                 <button className="primary" onClick={runQuery} disabled={loading} type="button">
+                  {loading ? <span className="btn_spinner" aria-hidden="true" /> : null}
                   {loading ? "Asking..." : "Ask"}
                 </button>
               </div>
@@ -919,7 +1030,12 @@ export default function App() {
 
         {activeTab === "documents" ? (
           <section className="grid">
-            <div className="panel wide dark_panel">
+            <div
+              className={`panel wide dark_panel drop_zone ${isDragging ? "is_dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <SectionHeader
                 title="Documents"
                 subtitle="Upload, review, and ingest your knowledge base files."
@@ -954,7 +1070,7 @@ export default function App() {
                   className="file_input"
                   type="file"
                   multiple
-                  accept=".pdf,.txt,.md"
+                  accept=".pdf,.doc,.docx,.txt,.md,.rtf,.csv"
                   onChange={(e) => handleUpload(e.target.files)}
                   disabled={uploading || settingsIncomplete || kbMissing}
                 />
@@ -965,6 +1081,7 @@ export default function App() {
                   {ingesting ? "Ingesting..." : "Ingest"}
                 </button>
               </div>
+              <p className="drop_hint">Drag & drop PDFs, DOCX, TXT, and more. Then press Ingest.</p>
 
               {docsError ? <div className="alert error">{docsError}</div> : null}
 
@@ -995,11 +1112,6 @@ export default function App() {
               ) : (
                 <div className="empty_state">
                   <p>No documents uploaded yet.</p>
-                  <div className="empty_state_actions">
-                    <button className="primary" type="button" onClick={() => fileInputRef.current?.click()} disabled={settingsIncomplete || kbMissing}>
-                      Upload documents
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -1048,11 +1160,22 @@ export default function App() {
                         type="button"
                         onClick={() => setSelectedMessage(message)}
                       >
-                        <div>
-                          <p className="message_subject">{message.subject || (message.scope === "broadcast" ? "Announcement" : "Direct message")}</p>
-                          <p className="message_preview">{message.body}</p>
+                        <div className="message_left">
+                          <div className="message_avatar">
+                            {message.sender_avatar_url ? (
+                              <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
+                            ) : (
+                              getInitials(message.sender_name || message.sender_email || "")
+                            )}
+                          </div>
+                          <div>
+                            <p className="message_subject">{message.subject || (message.scope === "broadcast" ? "Announcement" : "Direct message")}</p>
+                            <p className="message_preview">{message.body}</p>
+                          </div>
                         </div>
                         <div className="message_meta">
+                          <span>{message.sender_name || message.sender_email || "Unknown"}</span>
+                          {message.sender_position ? <span>{message.sender_position}</span> : null}
                           <span>{message.scope === "broadcast" ? "Broadcast" : "Direct"}</span>
                           <span>{formatDateTime(message.created_at)}</span>
                         </div>
@@ -1070,7 +1193,22 @@ export default function App() {
                 <SectionHeader title="Message" subtitle="Select a message to view details." />
                 {selectedMessage ? (
                   <div className="message_detail">
-                    <h3>{selectedMessage.subject || (selectedMessage.scope === "broadcast" ? "Announcement" : "Direct message")}</h3>
+                    <div className="message_detail_header">
+                      <div className="message_avatar large">
+                        {selectedMessage.sender_avatar_url ? (
+                          <img src={selectedMessage.sender_avatar_url} alt={selectedMessage.sender_name || "Avatar"} />
+                        ) : (
+                          getInitials(selectedMessage.sender_name || selectedMessage.sender_email || "")
+                        )}
+                      </div>
+                      <div>
+                        <h3>{selectedMessage.subject || (selectedMessage.scope === "broadcast" ? "Announcement" : "Direct message")}</h3>
+                        <p className="message_sender">
+                          {selectedMessage.sender_name || selectedMessage.sender_email || "Unknown"}
+                          {selectedMessage.sender_position ? ` • ${selectedMessage.sender_position}` : ""}
+                        </p>
+                      </div>
+                    </div>
                     <p className="message_body">{selectedMessage.body}</p>
                     <div className="message_detail_meta">
                       <span>From: {selectedMessage.sender_email || "System"}</span>
@@ -1291,6 +1429,63 @@ export default function App() {
                       <input value={registerName} onChange={(e) => setRegisterName(e.target.value)} placeholder="Your name" />
                     </div>
                     <div className="field">
+                      <label>Position</label>
+                      <input value={registerPosition} onChange={(e) => setRegisterPosition(e.target.value)} placeholder="Operations Manager" />
+                    </div>
+                    <div className="field">
+                      <label>Avatar photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setRegisterAvatarFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                    {registerAvatarPreview ? (
+                      <div className="avatar_editor">
+                        <div
+                          className="avatar_preview"
+                          style={{
+                            backgroundImage: `url(${registerAvatarPreview})`,
+                            backgroundSize: `${registerAvatarZoom * 100}%`,
+                            backgroundPosition: `${registerAvatarX}% ${registerAvatarY}%`
+                          }}
+                        />
+                        <div className="avatar_controls">
+                          <div className="field">
+                            <label>Zoom</label>
+                            <input
+                              type="range"
+                              min={1}
+                              max={2}
+                              step={0.05}
+                              value={registerAvatarZoom}
+                              onChange={(e) => setRegisterAvatarZoom(Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Position X</label>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              value={registerAvatarX}
+                              onChange={(e) => setRegisterAvatarX(Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Position Y</label>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              value={registerAvatarY}
+                              onChange={(e) => setRegisterAvatarY(Number(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="field">
                       <label>Email</label>
                       <input value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} placeholder="you@company.com" />
                     </div>
@@ -1306,8 +1501,13 @@ export default function App() {
               ) : (
                 <div className="account_grid">
                   <div className="panel profile_card">
+                    <div className="profile_avatar">
+                      {userAvatarUrl ? <img src={userAvatarUrl} alt="Avatar" /> : userInitials}
+                    </div>
                     <p className="stat_label">Name</p>
                     <p className="stat_value">{currentUser?.full_name || "—"}</p>
+                    <p className="stat_label">Position</p>
+                    <p className="stat_value">{currentUser?.position || "â€”"}</p>
                     <p className="stat_label">Email</p>
                     <p className="stat_value">{currentUser?.email || "—"}</p>
                   </div>
