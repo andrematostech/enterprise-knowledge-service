@@ -7,11 +7,14 @@ import {
   FiFileText,
   FiHome,
   FiInbox,
+  FiEye,
+  FiEyeOff,
   FiMenu,
   FiSearch,
   FiSettings,
   FiUser
 } from "react-icons/fi";
+import logo from "./assets/logo.png";
 
 const defaultBaseUrl = "http://127.0.0.1:8000";
 
@@ -19,7 +22,7 @@ function SectionHeader({ title, subtitle, action }) {
   return (
     <div className="section_header">
       <div>
-        <h2>{title}</h2>
+        {title ? <h2>{title}</h2> : null}
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
       {action ? <div className="section_action">{action}</div> : null}
@@ -126,8 +129,10 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerName, setRegisterName] = useState("");
   const [registerPosition, setRegisterPosition] = useState("");
   const [registerAvatarFile, setRegisterAvatarFile] = useState(null);
@@ -165,6 +170,7 @@ export default function App() {
   const [composeRecipient, setComposeRecipient] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
 
   const [lastIngestAt, setLastIngestAt] = useState(() => localStorage.getItem("lastIngestAt") || "");
   const [queryCount, setQueryCount] = useState(() => getStorageNumber("queryCount", 0));
@@ -713,13 +719,13 @@ export default function App() {
   const accountItem = { id: "account", label: "Account", icon: <FiUser className="nav_icon" /> };
 
   const pageTitleMap = {
-    home: "Home",
+    home: "",
     query: "Ask AI",
-    documents: "Documents",
-    inbox: "Inbox",
-    usage: "Usage",
-    settings: "Settings",
-    account: "Account"
+    documents: "",
+    inbox: "",
+    usage: "",
+    settings: "",
+    account: ""
   };
 
   const documentsCount = documents.length;
@@ -748,9 +754,12 @@ export default function App() {
         <div className="sidebar_header">
           <div className="sidebar_brand">
             {sidebarCollapsed ? (
-              <span className="brand_ai">K</span>
+              <img className="brand_logo" src={logo} alt="Kivo logo" />
             ) : (
-              <span className="brand_full">KIVO</span>
+              <>
+                <img className="brand_logo" src={logo} alt="Kivo logo" />
+                <span className="brand_full">KIVO</span>
+              </>
             )}
           </div>
           <button
@@ -795,22 +804,24 @@ export default function App() {
         </nav>
         <div className="sidebar_footer">
           {token ? (
-            <button
-              className="sidebar_profile"
-              type="button"
-              onClick={() => {
-                setActiveTab(accountItem.id);
-                setMobileSidebarOpen(false);
-              }}
-            >
-              <div className="avatar">
-                {userAvatarUrl ? <img src={userAvatarUrl} alt="Avatar" /> : userInitials}
-              </div>
-              <div className="sidebar_profile_text">
-                <p>{currentUser?.full_name || "Admin"}</p>
-                <span>{currentUser?.position || "Operations"}</span>
-              </div>
-            </button>
+            <div className="sidebar_profile_wrap">
+              <button
+                className="sidebar_profile"
+                type="button"
+                onClick={() => {
+                  setActiveTab(accountItem.id);
+                  setMobileSidebarOpen(false);
+                }}
+              >
+                <div className="avatar">
+                  {userAvatarUrl ? <img src={userAvatarUrl} alt="Avatar" /> : userInitials}
+                </div>
+                <div className="sidebar_profile_text">
+                  <p>{currentUser?.full_name || "Admin"}</p>
+                  <span>{currentUser?.position || "Operations"}</span>
+                </div>
+              </button>
+            </div>
           ) : (
             <TabButton
               active={activeTab === accountItem.id}
@@ -833,9 +844,15 @@ export default function App() {
             <button className="mobile_toggle" type="button" onClick={() => setMobileSidebarOpen(true)} aria-label="Open menu">
               <FiMenu />
             </button>
-            <p className="page_title">{pageTitleMap[activeTab] || "Home"}</p>
+            {pageTitleMap[activeTab] ? <p className="page_title">{pageTitleMap[activeTab]}</p> : null}
           </div>
-          <div className="topbar_right" />
+          <div className="topbar_right">
+            <div className="topbar_profile" aria-hidden="true">
+              <div className="avatar">
+                {userAvatarUrl ? <img src={userAvatarUrl} alt="Avatar" /> : userInitials}
+              </div>
+            </div>
+          </div>
         </header>
 
                 {activeTab === "home" ? (
@@ -843,7 +860,6 @@ export default function App() {
             <div className="home_main">
               <div className="home_header">
                 <div>
-                  <h2>Home</h2>
                   <p>Overview of your workspace</p>
                 </div>
               </div>
@@ -919,25 +935,30 @@ export default function App() {
                     </div>
                   </div>
                 ) : broadcastMessages.length ? (
-                  <div className="announcement_compact_list">
+                  <div className="announcement_compact_grid">
                     {broadcastMessages.slice(0, 3).map((message) => (
-                      <div key={message.id} className="announcement_row">
-                        <div className="announcement_avatar small">
-                          {message.sender_avatar_url ? (
-                            <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
-                          ) : (
-                            getInitials(message.sender_name || message.sender_email || "")
-                          )}
+                      <button
+                        key={message.id}
+                        className="announcement_tile"
+                        type="button"
+                        onClick={() => setAnnouncementsOpen(true)}
+                      >
+                        <div className="announcement_tile_header">
+                          <div className="announcement_header_left">
+                            <div className="announcement_avatar small">
+                              {message.sender_avatar_url ? (
+                                <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
+                              ) : (
+                                getInitials(message.sender_name || message.sender_email || "")
+                              )}
+                            </div>
+                            <span className="announcement_sender">{message.sender_name || message.sender_email || "System"}</span>
+                          </div>
+                          <span className="announcement_tile_time">{formatDateTime(message.created_at)}</span>
                         </div>
-                        <div className="announcement_row_body">
-                          <div className="announcement_row_title">{message.subject || "Announcement"}</div>
-                          <div className="announcement_row_preview">{message.body}</div>
-                        </div>
-                        <div className="announcement_row_meta">
-                          <span>{message.sender_name || message.sender_email || "System"}</span>
-                          <span>{formatDateTime(message.created_at)}</span>
-                        </div>
-                      </div>
+                        <div className="announcement_row_title">{message.subject || "Announcement"}</div>
+                        <div className="announcement_row_preview">{message.body}</div>
+                      </button>
                     ))}
                   </div>
                 ) : (
@@ -1354,6 +1375,7 @@ export default function App() {
         {activeTab === "settings" ? (
           <section className="grid">
             <div className="panel wide settings_panel">
+              <SectionHeader title="Settings" />
               <SectionHeader
                 title="Connection"
                 subtitle="Point the console to the correct API and knowledge base."
@@ -1372,16 +1394,12 @@ export default function App() {
                   <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="changeme" />
                 </div>
               </div>
+              <div className="settings_divider" />
 
               <div className="settings_block">
                 <SectionHeader
                   title="Knowledge Bases"
                   subtitle="Select an existing knowledge base or create a new one."
-                  action={
-                    <button className="ghost" type="button" onClick={fetchKnowledgeBases} disabled={kbLoading || settingsIncomplete}>
-                      {kbLoading ? "Refreshing..." : "Refresh"}
-                    </button>
-                  }
                 />
                 <div className="form_grid">
                   <div className="field">
@@ -1409,6 +1427,11 @@ export default function App() {
                     <label>Knowledge base ID</label>
                     <input value={kbId} readOnly placeholder="Select a knowledge base" />
                   </div>
+                </div>
+                <div className="row align_right">
+                  <button className="ghost" type="button" onClick={fetchKnowledgeBases} disabled={kbLoading || settingsIncomplete}>
+                    {kbLoading ? "Refreshing..." : "Refresh"}
+                  </button>
                 </div>
 
                 <div className="create_kb">
@@ -1454,7 +1477,22 @@ export default function App() {
                     </div>
                     <div className="field">
                       <label>Password</label>
-                      <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••" />
+                      <div className="password_field">
+                        <input
+                          type={showLoginPassword ? "text" : "password"}
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="••••••••"
+                        />
+                        <button
+                          className="ghost icon_button"
+                          type="button"
+                          onClick={() => setShowLoginPassword((prev) => !prev)}
+                          aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                        >
+                          {showLoginPassword ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
                     </div>
                     <button className="primary" type="button" onClick={handleLogin} disabled={authLoading}>
                       {authLoading ? "Signing in..." : "Login"}
@@ -1529,7 +1567,22 @@ export default function App() {
                     </div>
                     <div className="field">
                       <label>Password</label>
-                      <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} placeholder="••••••••" />
+                      <div className="password_field">
+                        <input
+                          type={showRegisterPassword ? "text" : "password"}
+                          value={registerPassword}
+                          onChange={(e) => setRegisterPassword(e.target.value)}
+                          placeholder="••••••••"
+                        />
+                        <button
+                          className="ghost icon_button"
+                          type="button"
+                          onClick={() => setShowRegisterPassword((prev) => !prev)}
+                          aria-label={showRegisterPassword ? "Hide password" : "Show password"}
+                        >
+                          {showRegisterPassword ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
                     </div>
                     <button className="primary" type="button" onClick={handleRegister} disabled={authLoading}>
                       {authLoading ? "Creating..." : "Register"}
@@ -1562,6 +1615,44 @@ export default function App() {
               )}
             </div>
           </section>
+        ) : null}
+        {announcementsOpen ? (
+          <div className="modal_overlay" onClick={() => setAnnouncementsOpen(false)} role="presentation">
+            <div className="modal_panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+              <div className="modal_header">
+                <div>
+                  <h3>All announcements</h3>
+                  <p>Broadcast messages sent to your team.</p>
+                </div>
+                <button className="ghost" type="button" onClick={() => setAnnouncementsOpen(false)}>
+                  Close
+                </button>
+              </div>
+              <div className="modal_body">
+                <div className="announcement_list">
+                  {broadcastMessages.map((message) => (
+                    <div key={message.id} className="announcement_item">
+                      <div className="announcement_header">
+                        <div className="announcement_avatar">
+                          {message.sender_avatar_url ? (
+                            <img src={message.sender_avatar_url} alt={message.sender_name || "Avatar"} />
+                          ) : (
+                            getInitials(message.sender_name || message.sender_email || "")
+                          )}
+                        </div>
+                        <div className="announcement_text">
+                          <h4>{message.subject || "Announcement"}</h4>
+                          <p>{message.body}</p>
+                          <span>{message.sender_name || message.sender_email || "Unknown"}</span>
+                        </div>
+                      </div>
+                      <div className="announcement_meta">{formatDateTime(message.created_at)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         ) : null}
       </main>
       <ToastStack toasts={toasts} />
