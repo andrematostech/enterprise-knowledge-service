@@ -1,8 +1,68 @@
-# Enterprise Knowledge Service (EKS)
+# KIVO — Enterprise Knowledge Infrastructure
 
-EKS is a startup-grade backend service for multi-tenant knowledge bases with document ingestion and Retrieval-Augmented Generation (RAG) over private documents.
+KIVO is a multi-tenant knowledge platform that enables teams to build secure, AI-powered search and question-answering systems over private documents.
 
-## Architecture
+It allows organizations to upload internal files, index them into vector embeddings, and query them using Retrieval-Augmented Generation (RAG). KIVO provides both a production-ready backend API and a modern web interface for managing knowledge bases.
+
+---
+
+## 🧠 What Is KIVO?
+
+KIVO is infrastructure for private AI knowledge systems.
+
+Instead of sending your data to external tools, KIVO lets you:
+
+- Upload internal documents
+- Index them into a vector database
+- Retrieve relevant context
+- Generate grounded AI responses with citations
+
+It is designed for:
+
+- Startups building internal AI tools
+- Enterprises managing structured knowledge
+- Developer teams integrating AI into products
+- Organizations requiring tenant-level isolation
+
+---
+
+## 🚀 What KIVO Does
+
+KIVO enables:
+
+### 📂 Multi-Tenant Knowledge Bases
+Each knowledge base is isolated and can store its own documents, embeddings, and metadata.
+
+### 📄 Document Ingestion Pipeline
+- Upload PDF, DOC, TXT, or Markdown files
+- Chunk documents into configurable sizes
+- Generate embeddings
+- Store vectors in Chroma
+- Track ingestion metadata in PostgreSQL
+
+### 🔍 Retrieval-Augmented Generation (RAG)
+When querying:
+1. The system retrieves the most relevant chunks
+2. Sends context to the LLM
+3. Generates a grounded response
+4. Returns citations
+
+### 🔐 Secure API Access
+All API requests require an API key header:  
+X-API-Key: <your_key>
+
+
+### 🖥 Web Interface
+A React-based dashboard for:
+- Managing knowledge bases
+- Uploading documents
+- Running ingestion
+- Querying AI
+- Viewing usage metrics
+
+---
+
+## 🏗 System Architecture
 
 ```mermaid
 flowchart LR
@@ -13,106 +73,4 @@ flowchart LR
   Services --> Vector[Chroma Vector Store]
   Services --> Storage[Local File Storage]
   Services --> OpenAI[OpenAI API]
-  Client --> WebUI[React UI]
-  WebUI --> API
-```
-
-## Features
-
-- Multi-tenant knowledge bases
-- Document upload (PDF, TXT, Markdown)
-- Ingestion pipeline (chunk + embed + store)
-- RAG query with citations
-- API key authentication
-- Structured logging
-- React UI for querying
-
-## Setup
-
-1. Copy environment template and fill values.
-2. Start the stack with Docker Compose.
-
-```bash
-docker compose up --build
-```
-
-The API will be available at `http://localhost:8000`.
-The UI will be available at `http://localhost:5173`.
-
-## Environment Variables
-
-- `OPENAI_API_KEY`: OpenAI API key
-- `OPENAI_EMBED_MODEL`: embedding model (default `text-embedding-3-small`)
-- `OPENAI_GEN_MODEL`: generation model (required for query)
-- `DATABASE_URL`: PostgreSQL connection string
-- `CHROMA_PATH`: local Chroma directory
-- `STORAGE_PATH`: document storage directory
-- `APP_ENV`: environment name
-- `API_KEY`: API key for requests
-- `CHUNK_SIZE`: chunk size in characters (default 800)
-- `CHUNK_OVERLAP`: overlap in characters (default 100)
-
-## API Usage Examples
-
-Create a knowledge base:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/knowledge-bases \
-  -H "X-API-Key: changeme" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Engineering","description":"Internal docs"}'
-```
-
-Upload a document:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/knowledge-bases/<kb_id>/documents" \
-  -H "X-API-Key: changeme" \
-  -F "file=@./docs/handbook.pdf"
-```
-
-Ingest documents:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/knowledge-bases/<kb_id>/ingest" \
-  -H "X-API-Key: changeme"
-```
-
-Query:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/knowledge-bases/<kb_id>/query" \
-  -H "X-API-Key: changeme" \
-  -H "Content-Type: application/json" \
-  -d '{"question":"What is our security policy?","top_k":5}'
-```
-
-## UI (Local Dev)
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-## Design Decisions
-
-- Clean architecture separation: routes -> services -> repositories
-- Chroma for local persistent vector storage
-- Postgres for metadata, chunk tracking, ingestion status
-- OpenAI integration isolated in `OpenAIService`
-- Config-driven chunking parameters
-
-## Testing
-
-```bash
-pytest
-```
-
-## Future Improvements
-
-- Background job queue for ingestion
-- Rate limiting
-- Better chunking strategies and metadata filters
-- Streaming responses for query
-- Per-tenant encryption at rest
+  WebUI[React UI] --> API
