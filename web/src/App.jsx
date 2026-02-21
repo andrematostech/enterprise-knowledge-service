@@ -719,13 +719,13 @@ export default function App() {
   const accountItem = { id: "account", label: "Account", icon: <FiUser className="nav_icon" /> };
 
   const pageTitleMap = {
-    home: "",
+    home: "Home",
     query: "Ask AI",
-    documents: "",
-    inbox: "",
-    usage: "",
-    settings: "",
-    account: ""
+    documents: "Documents",
+    inbox: "Inbox",
+    usage: "Usage",
+    settings: "Settings",
+    account: "Account"
   };
 
   const documentsCount = documents.length;
