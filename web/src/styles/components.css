@@ -334,6 +334,7 @@
 .main_layout .topbar {
   grid-column: 1 / -1;
   grid-row: 1;
+  border-right: 1px solid var(--stroke-1);
 }
 
 .main_layout .right_rail {
@@ -356,8 +357,7 @@
   border-bottom: none;
   background: var(--surface-1);
   position: relative;
-  border-left: 1px solid var(--stroke-1);
-  border-top-left-radius: var(--r-lg);
+  border-top-left-radius: 18px;
   overflow: hidden;
 }
 
@@ -396,16 +396,15 @@
   height: 35px;
 }
 
-.theme_toggle {
-  background: var(--accent-soft);
-  border-color: var(--accent-9);
-  color: var(--accent-9);
-}
-
-.theme_toggle:hover {
-  background: var(--accent-5);
+.btn.theme_toggle {
   border-color: var(--accent-9);
   color: var(--text-1);
+}
+
+.btn.theme_toggle:hover {
+  border-color: var(--accent-9);
+  color: var(--text-1);
+  box-shadow: 0 0 0 2px hsl(217 98% 70% / 0.18);
 }
 
 .workspace_select {
@@ -417,7 +416,7 @@
   overflow: auto;
   flex: 1;
   min-height: 0;
-  border-top-left-radius: var(--r-lg);
+  border-top-left-radius: 18px;
   border-left: 1px solid var(--stroke-1);
   border-top: 1px solid var(--stroke-1);
 }
