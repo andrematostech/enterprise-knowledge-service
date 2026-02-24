@@ -8,12 +8,33 @@ from app.api.routes.documents import router as documents_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.query import router as query_router
 from app.api.routes.messages import router as messages_router
+from app.core.config import Settings
 from app.core.logging import configure_logging
+
+from alembic import command
+from alembic.config import Config
+from pathlib import Path
+import logging
+
+
+def run_migrations() -> None:
+    settings = Settings()
+    if not settings.auto_migrate:
+        return
+    root = Path(__file__).resolve().parent.parent
+    alembic_ini = root / "alembic.ini"
+    if not alembic_ini.exists():
+        logging.getLogger(__name__).warning("Alembic config not found; skipping migrations.")
+        return
+    config = Config(str(alembic_ini))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
 
 
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Enterprise Knowledge Service", version="0.1.0")
+    run_migrations()
 
     app.add_middleware(
         CORSMiddleware,
@@ -23,6 +44,7 @@ def create_app() -> FastAPI:
             "http://localhost:8000",
             "http://127.0.0.1:8000",
         ],
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

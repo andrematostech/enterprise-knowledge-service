@@ -121,7 +121,7 @@
 .sidebar {
   grid-area: sidebar;
   background: var(--surface-1);
-  border-right: 1px solid var(--stroke-1);
+  border-right: none;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -272,8 +272,8 @@
 }
 
 .sidebar_profile .avatar {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   background: var(--accent-soft);
   display: grid;
@@ -353,9 +353,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 15px 10px;
-  border-bottom: 1px solid var(--stroke-1);
+  border-bottom: none;
   background: var(--surface-1);
+  position: relative;
+  border-left: 1px solid var(--stroke-1);
+  border-top-left-radius: var(--r-lg);
+  overflow: hidden;
 }
+
 
 .topbar_left {
   display: flex;
@@ -391,6 +396,18 @@
   height: 35px;
 }
 
+.theme_toggle {
+  background: var(--accent-soft);
+  border-color: var(--accent-9);
+  color: var(--accent-9);
+}
+
+.theme_toggle:hover {
+  background: var(--accent-5);
+  border-color: var(--accent-9);
+  color: var(--text-1);
+}
+
 .workspace_select {
   min-width: 200px;
 }
@@ -400,6 +417,9 @@
   overflow: auto;
   flex: 1;
   min-height: 0;
+  border-top-left-radius: var(--r-lg);
+  border-left: 1px solid var(--stroke-1);
+  border-top: 1px solid var(--stroke-1);
 }
 
 .content_scroll--locked {
@@ -606,7 +626,7 @@
   display: grid;
   gap: 10px;
   box-shadow: var(--shadow-1), var(--highlight-1);
-  text-align: center;
+  text-align: left;
 }
 
 .metric_header {
@@ -614,8 +634,6 @@
   align-items: center;
   gap: 8px;
   justify-content: flex-start;
-  width: 100%;
-  text-align: left;
 }
 
 .metric_icon {
@@ -1021,6 +1039,17 @@
 .account_panel_body {
   display: grid;
   gap: 20px;
+}
+
+.account_profile_header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account_profile_meta {
+  display: grid;
+  gap: 4px;
 }
 
 .account_inline {

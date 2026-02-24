@@ -1,8 +1,10 @@
 import Panel from "../components/Panel.jsx";
 import Button from "../components/Button.jsx";
 import Input from "../components/Input.jsx";
+import { formatDateTime } from "../lib/format.js";
 
 export default function Account({
+  currentUser,
   loginEmail,
   setLoginEmail,
   loginPassword,
@@ -28,27 +30,58 @@ export default function Account({
 }) {
   return (
     <div className="grid_two account_layout">
-      <Panel title="Login" subtitle="Access your account." variant="raised">
-        <div className="account_panel_body">
-          <Input label="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-          <label className="field">
-            <span className="field_label">Password</span>
-            <div className="account_inline">
-              <input
-                className="input"
-                type={showLoginPassword ? "text" : "password"}
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
-              <Button variant="ghost" size="sm" onClick={onToggleLoginPassword}>Show</Button>
+      {currentUser ? (
+        <Panel title="Account" subtitle="Your profile details." variant="raised">
+          <div className="account_panel_body">
+            <div className="account_profile_header">
+              <div className="avatar">
+                {currentUser.avatar_url ? (
+                  <img src={currentUser.avatar_url} alt="Avatar" />
+                ) : (
+                  (currentUser.full_name || currentUser.email || "?")
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()
+                )}
+              </div>
+              <div className="account_profile_meta">
+                <div className="panel_title">{currentUser.full_name || "Account"}</div>
+                <div className="panel_subtitle">{currentUser.email}</div>
+              </div>
             </div>
-          </label>
-          <Button variant="primary" onClick={onLogin} disabled={loading}>
-            {loading ? "Signing in..." : "Login"}
-          </Button>
-          <Button variant="ghost" onClick={onLogout}>Log out</Button>
-        </div>
-      </Panel>
+            <Input label="Full name" value={currentUser.full_name || ""} readOnly />
+            <Input label="Position" value={currentUser.position || ""} readOnly />
+            <Input label="Email" value={currentUser.email || ""} readOnly />
+            <Input label="Role" value={currentUser.is_admin ? "Admin" : "Member"} readOnly />
+            <Input label="Created" value={formatDateTime(currentUser.created_at)} readOnly />
+            <Button variant="ghost" onClick={onLogout}>Log out</Button>
+          </div>
+        </Panel>
+      ) : (
+        <Panel title="Login" subtitle="Access your account." variant="raised">
+          <div className="account_panel_body">
+            <Input label="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+            <label className="field">
+              <span className="field_label">Password</span>
+              <div className="account_inline">
+                <input
+                  className="input"
+                  type={showLoginPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+                <Button variant="ghost" size="sm" onClick={onToggleLoginPassword}>Show</Button>
+              </div>
+            </label>
+            <Button variant="primary" onClick={onLogin} disabled={loading}>
+              {loading ? "Signing in..." : "Login"}
+            </Button>
+          </div>
+        </Panel>
+      )}
       <Panel title="Register" subtitle="Create a new account." variant="raised">
         <div className="account_panel_body">
           <Input label="Full name" value={registerName} onChange={(e) => setRegisterName(e.target.value)} />

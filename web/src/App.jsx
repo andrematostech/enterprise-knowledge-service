@@ -718,6 +718,7 @@ export default function App() {
     ),
     account: (
       <Account
+        currentUser={currentUser}
         loginEmail={loginEmail}
         setLoginEmail={setLoginEmail}
         loginPassword={loginPassword}

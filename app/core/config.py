@@ -28,3 +28,5 @@ class Settings(BaseSettings):
 
     chunk_size: int = 800
     chunk_overlap: int = 100
+
+    auto_migrate: bool = True
