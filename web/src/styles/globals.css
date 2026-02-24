@@ -1,0 +1,51 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Montserrat", "SF Pro Text", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(180deg, hsl(var(--hue-base) 24% 12%) 0%, hsl(var(--hue-base) 26% 16%) 100%);
+  color: var(--text-1);
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+#root {
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--hue-base) 14% 28%);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

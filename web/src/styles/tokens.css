@@ -1,0 +1,48 @@
+:root {
+  --hue-base: 220;
+  --hue-accent: 214;
+
+  --surface-0: hsl(var(--hue-base) 24% 10%);
+  --surface-1: hsl(var(--hue-base) 24% 12%);
+  --surface-2: hsl(var(--hue-base) 22% 14%);
+  --surface-3: hsl(var(--hue-base) 20% 16%);
+
+  --stroke-1: hsl(var(--hue-base) 18% 22%);
+  --stroke-2: hsl(var(--hue-base) 18% 28%);
+
+  --text-1: hsl(0 0% 96%);
+  --text-2: hsl(0 0% 78%);
+  --text-3: hsl(0 0% 60%);
+
+  --accent-9: hsl(var(--hue-accent) 85% 60%);
+  --accent-5: hsl(var(--hue-accent) 60% 48%);
+  --accent-a: hsla(var(--hue-accent), 80%, 60%, 0.12);
+  --focus-ring: hsla(var(--hue-accent), 85%, 60%, 0.35);
+
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  --shadow-1: 0 3px 8px rgba(0, 0, 0, 0.22);
+  --shadow-2: 0 6px 14px rgba(0, 0, 0, 0.26);
+  --shadow-3: 0 12px 26px rgba(0, 0, 0, 0.32);
+  --highlight-1: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --fs-0: 12px;
+  --fs-1: 14px;
+  --fs-2: 16px;
+  --fs-3: 20px;
+  --fs-4: 24px;
+
+  --fw-regular: 450;
+  --fw-medium: 550;
+  --fw-semibold: 650;
+}
