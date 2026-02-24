@@ -85,6 +85,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem("themeMode") || "dark");
 
   const [toasts, setToasts] = useState([]);
 
@@ -111,7 +112,12 @@ export default function App() {
     setStorageNumber("lastLatencyMs", lastLatencyMs);
     setStorageNumber("avgLatencyMs", avgLatencyMs);
     setStorageNumber("queryCount", queryCount);
-  }, [baseUrl, apiKey, token, kbId, lastIngestAt, lastLatencyMs, avgLatencyMs, queryCount]);
+    localStorage.setItem("themeMode", themeMode);
+  }, [baseUrl, apiKey, token, kbId, lastIngestAt, lastLatencyMs, avgLatencyMs, queryCount, themeMode]);
+
+  useEffect(() => {
+    document.body.classList.toggle("theme-light", themeMode === "light");
+  }, [themeMode]);
 
   const authReady = Boolean(apiKey || token);
   const settingsIncomplete = !baseUrl || !authReady;
@@ -761,7 +767,9 @@ export default function App() {
           actions: topbarActions,
           avatar: currentUser?.avatar_url || "",
           initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
-          onMobileMenu: () => setMobileSidebarOpen(true)
+          onMobileMenu: () => setMobileSidebarOpen(true),
+          themeMode,
+          onToggleTheme: () => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))
         }}
         rightRailProps={rightRailProps}
         contentClassName={activeTab === "query" ? "content_scroll--locked" : ""}

@@ -1,4 +1,4 @@
-import { FiMenu } from "react-icons/fi";
+import { FiMenu, FiMoon, FiSun } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
@@ -11,7 +11,9 @@ export default function Topbar({
   actions,
   avatar,
   initials,
-  onMobileMenu
+  onMobileMenu,
+  themeMode,
+  onToggleTheme
 }) {
   return (
     <header className="topbar">
@@ -44,6 +46,17 @@ export default function Topbar({
             {action.label}
           </Button>
         ))}
+        {onToggleTheme ? (
+          <Button
+            className="theme_toggle"
+            variant="ghost"
+            size="sm"
+            onClick={onToggleTheme}
+            aria-label="Toggle theme"
+          >
+            {themeMode === "light" ? <FiMoon /> : <FiSun />}
+          </Button>
+        ) : null}
         <div className="avatar">
           {avatar ? <img src={avatar} alt="Avatar" /> : initials || "?"}
         </div>

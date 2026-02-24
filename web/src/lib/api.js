@@ -1,6 +1,12 @@
 export const extractDetail = (data) => {
   if (!data) return "";
   if (typeof data === "string") return data;
+  if (Array.isArray(data.detail)) {
+    return data.detail.map((item) => item.msg || item.message || JSON.stringify(item)).join(", ");
+  }
+  if (typeof data.detail === "object") {
+    return JSON.stringify(data.detail);
+  }
   return data.detail || data.message || data.error || "";
 };
 

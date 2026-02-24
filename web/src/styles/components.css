@@ -606,12 +606,16 @@
   display: grid;
   gap: 10px;
   box-shadow: var(--shadow-1), var(--highlight-1);
+  text-align: center;
 }
 
 .metric_header {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
 }
 
 .metric_icon {
@@ -634,6 +638,8 @@
   font-size: var(--fs-0);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-align: left;
+  justify-self: start;
 }
 
 .metric_value {
@@ -644,10 +650,16 @@
 .metric_sub {
   color: var(--text-3);
   font-size: var(--fs-0);
+  text-align: left;
+  justify-self: start;
 }
 
 .list {
   display: grid; 
+}
+
+.right_rail .list {
+  gap: 8px;
 }
 
 .list_row {
@@ -1294,6 +1306,10 @@
 
 .home_layout .panel {
   padding: 24px;
+}
+
+.home_layout .metric_card {
+  padding: 18px;
 }
 
 .home_layout .panel_header {

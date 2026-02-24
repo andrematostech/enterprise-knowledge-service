@@ -59,3 +59,28 @@
   --fw-medium: 550;
   --fw-semibold: 650;
 }
+
+body.theme-light {
+  --surface-0: hsl(0 0% 96%);
+  --surface-1: hsl(0 0% 94%);
+  --surface-2: hsl(0 0% 92%);
+  --surface-3: hsl(0 0% 89%);
+
+  --stroke-1: hsl(0 0% 78%);
+  --stroke-2: hsl(0 0% 68%);
+
+  --text-1: hsl(0 0% 12%);
+  --text-2: hsl(0 0% 35%);
+  --text-3: hsl(0 0% 50%);
+  --text-inverse: hsl(0 0% 96%);
+
+  --overlay-1: hsl(0 0% 0% / 0.15);
+  --overlay-2: hsl(0 0% 0% / 0.08);
+  --hover-1: hsl(0 0% 0% / 0.06);
+  --sidebar-edge: hsl(0 0% 0% / 0.08);
+
+  --shadow-1: 0 1px 2px hsl(0 0% 0% / 0.12);
+  --shadow-2: 0 4px 10px hsl(0 0% 0% / 0.12);
+  --shadow-3: 0 10px 22px hsl(0 0% 0% / 0.16);
+  --highlight-1: inset 0 1px 0 hsl(0 0% 100% / 0.35);
+}
