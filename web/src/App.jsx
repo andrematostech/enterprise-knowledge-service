@@ -137,6 +137,12 @@ export default function App() {
     }
   };
 
+  const handleLogout = () => {
+    setToken("");
+    setCurrentUser(null);
+    pushToast("success", "Logged out.");
+  };
+
   const handleLogin = async () => {
     if (!loginEmail || !loginPassword) {
       pushToast("error", "Email and password are required.");
@@ -274,6 +280,24 @@ export default function App() {
       await fetchInbox();
     } catch (err) {
       pushToast("error", err.message || "Failed to mark as read");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!token) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/messages/${messageId}`,
+        method: "DELETE",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to delete message");
+      setInboxMessages((prev) => prev.filter((message) => message.id !== messageId));
+      setSelectedMessage((prev) => (prev?.id === messageId ? null : prev));
+      pushToast("success", "Message deleted.");
+    } catch (err) {
+      pushToast("error", err.message || "Failed to delete message");
     }
   };
 
@@ -505,6 +529,14 @@ export default function App() {
     }
   }, [token, baseUrl]);
 
+  useEffect(() => {
+    if (!token) return;
+    const intervalId = setInterval(() => {
+      fetchInbox();
+    }, 15000);
+    return () => clearInterval(intervalId);
+  }, [token, baseUrl]);
+
   const navItems = [
     { id: "home", label: "Home", icon: <FiHome /> },
     { id: "query", label: "Ask AI", icon: <FiSearch /> },
@@ -579,10 +611,7 @@ export default function App() {
     onAnnouncementsClick: () => setAnnouncementsOpen(true)
   } : null;
 
-  const topbarActions = [
-    { label: "New query", variant: "ghost", onClick: () => setActiveTab("query") },
-    { label: "Upload", variant: "secondary", onClick: () => setActiveTab("documents") }
-  ];
+  const topbarActions = [];
 
   const content = {
     home: (
@@ -638,6 +667,7 @@ export default function App() {
         selected={selectedMessage}
         onSelect={setSelectedMessage}
         onMarkRead={handleMarkRead}
+        onDelete={handleDeleteMessage}
         filter={inboxFilter}
         onFilter={setInboxFilter}
         composeScope={composeScope}
@@ -650,6 +680,7 @@ export default function App() {
         setComposeBody={setComposeBody}
         onSend={handleSendMessage}
         isAdmin={Boolean(currentUser?.is_admin)}
+        currentUserEmail={currentUser?.email || ""}
       />
     ),
     usage: <Usage metrics={usageMetrics} />,
@@ -701,6 +732,7 @@ export default function App() {
         onRegisterAvatar={handleRegisterAvatar}
         onLogin={handleLogin}
         onRegister={handleRegister}
+        onLogout={handleLogout}
         loading={authLoading}
       />
     )
@@ -726,13 +758,6 @@ export default function App() {
         }}
         topbarProps={{
           title: pageTitleMap[activeTab],
-          workspaceLabel: "Workspace",
-          workspaceItems,
-          workspaceValue: kbId,
-          onWorkspaceChange: (e) => {
-            setKbId(e.target.value);
-            localStorage.setItem("kbSelectedByUser", "true");
-          },
           actions: topbarActions,
           avatar: currentUser?.avatar_url || "",
           initials: getInitials(currentUser?.full_name || currentUser?.email || ""),

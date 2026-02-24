@@ -15,7 +15,7 @@ export default function RightRail({ statusRows, tips, announcements, onAnnouncem
         </div>
       </Panel>
       <Panel title="Tips" subtitle="Quick guidance">
-        <div className="list">
+        <div className="list tips_list">
           {tips.map((tip) => (
             <div key={tip} className="list_row">
               <span>{tip}</span>

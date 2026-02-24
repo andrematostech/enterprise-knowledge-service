@@ -9,11 +9,12 @@ body {
 }
 
 body {
-  font-family: "Montserrat", "SF Pro Text", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
-  background: linear-gradient(180deg, hsl(var(--hue-base) 24% 12%) 0%, hsl(var(--hue-base) 26% 16%) 100%);
+  font-family: "SF Pro Text", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  background: var(--surface-0);
   color: var(--text-1);
   line-height: 1.5;
   overflow: hidden;
+  user-select: none;
 }
 
 #root {
@@ -42,7 +43,7 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--hue-base) 14% 28%);
+  background: var(--stroke-2);
   border-radius: 999px;
 }
 

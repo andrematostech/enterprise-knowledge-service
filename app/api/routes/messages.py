@@ -27,7 +27,13 @@ def inbox(
     messages = (
         db.execute(
             select(Message)
-            .where(or_(Message.scope == "broadcast", Message.recipient_user_id == current_user.id))
+            .where(
+                or_(
+                    Message.scope == "broadcast",
+                    Message.recipient_user_id == current_user.id,
+                    Message.sender_user_id == current_user.id,
+                )
+            )
             .order_by(Message.created_at.desc())
         )
         .scalars()
@@ -133,3 +139,40 @@ def mark_read(
         },
         from_attributes=True,
     )
+
+
+@router.delete("/{message_id}", response_model=MessageRead)
+def delete_message(
+    message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user_from_jwt),
+    db: Session = Depends(get_db),
+) -> MessageRead:
+    message = db.get(Message, message_id)
+    if not message:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+
+    is_sender = message.sender_user_id == current_user.id
+    is_recipient = message.recipient_user_id == current_user.id
+    is_admin = is_admin_user(db, current_user)
+
+    if message.scope == "broadcast":
+        if not (is_sender or is_admin):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this message")
+    else:
+        if not (is_sender or is_recipient):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this message")
+
+    payload = MessageRead.model_validate(
+        {
+            **message.__dict__,
+            "sender_email": message.sender.email if message.sender else None,
+            "sender_name": message.sender.full_name if message.sender else None,
+            "sender_position": message.sender.position if message.sender else None,
+            "sender_avatar_url": message.sender.avatar_url if message.sender else None,
+            "recipient_email": message.recipient.email if message.recipient else None,
+        },
+        from_attributes=True,
+    )
+    db.delete(message)
+    db.commit()
+    return payload

@@ -25,7 +25,7 @@ export default function Settings({
   onHealthCheck
 }) {
   return (
-    <div className="list">
+    <div className="list settings_layout">
       <Panel
         title="Connection"
         subtitle="Point the console to the correct API and knowledge base."
@@ -35,36 +35,40 @@ export default function Settings({
           </Button>
         }
       >
-        <div className="status_pill">Status: {healthStatus}</div>
-        <div className="grid_two">
-          <Input label="API base URL" value={baseUrl} onChange={(e) => onBaseUrl(e.target.value)} />
-          <Input label="X-API-Key" value={apiKey} onChange={(e) => onApiKey(e.target.value)} />
+        <div className="settings_panel_body">
+          <div className="status_pill">Status: {healthStatus}</div>
+          <div className="grid_two">
+            <Input label="API base URL" value={baseUrl} onChange={(e) => onBaseUrl(e.target.value)} />
+            <Input label="X-API-Key" value={apiKey} onChange={(e) => onApiKey(e.target.value)} />
+          </div>
         </div>
       </Panel>
 
       <Panel
-        title="Knowledge Bases"
-        subtitle="Select an existing knowledge base or create a new one."
+        title="Workspace"
+        subtitle="Select an existing workspace or create a new one."
         action={
           <Button variant="ghost" size="sm" onClick={onRefreshKb} disabled={kbLoading}>
             {kbLoading ? "Refreshing..." : "Refresh"}
           </Button>
         }
       >
-        <Select
-          label="Active knowledge base"
-          value={kbId}
-          onChange={(e) => onKbSelect(e.target.value)}
-          options={[{ value: "", label: "Select knowledge base" }, ...kbItems]}
-        />
-        {kbError ? <div className="panel_subtitle">{kbError}</div> : null}
-        <Input label="Knowledge base ID" value={kbId} readOnly />
-        <div className="nav_divider" />
-        <Input label="Name" value={kbName} onChange={(e) => onKbName(e.target.value)} placeholder="Finance KB" />
-        <Input label="Description" value={kbDescription} onChange={(e) => onKbDescription(e.target.value)} placeholder="Policies and reports" />
-        <Button variant="primary" onClick={onCreateKb} disabled={kbCreating || !kbName.trim()}>
-          {kbCreating ? "Creating..." : "Create knowledge base"}
-        </Button>
+        <div className="settings_panel_body">
+          <Select
+            label="Active workspace"
+            value={kbId}
+            onChange={(e) => onKbSelect(e.target.value)}
+            options={[{ value: "", label: "Select workspace" }, ...kbItems]}
+          />
+          {kbError ? <div className="panel_subtitle">{kbError}</div> : null}
+          <Input label="Workspace ID" value={kbId} readOnly />
+          <div className="nav_divider" />
+          <Input label="Name" value={kbName} onChange={(e) => onKbName(e.target.value)} placeholder="Finance KB" />
+          <Input label="Description" value={kbDescription} onChange={(e) => onKbDescription(e.target.value)} placeholder="Policies and reports" />
+          <Button variant="primary" onClick={onCreateKb} disabled={kbCreating || !kbName.trim()}>
+            {kbCreating ? "Creating..." : "Create workspace"}
+          </Button>
+        </div>
       </Panel>
     </div>
   );
