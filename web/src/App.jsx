@@ -764,6 +764,7 @@ export default function App() {
           onMobileMenu: () => setMobileSidebarOpen(true)
         }}
         rightRailProps={rightRailProps}
+        contentClassName={activeTab === "query" ? "content_scroll--locked" : ""}
         toasts={toasts}
         onDismissToast={dismissToast}
         sidebarOpen={mobileSidebarOpen}

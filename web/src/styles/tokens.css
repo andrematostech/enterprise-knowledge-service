@@ -18,6 +18,10 @@
   --accent-soft: hsl(217 90% 60% / 0.12);
   --accent-border: hsl(217 80% 55% / 0.5);
   --focus-ring: hsl(217 100% 65% / 0.5);
+  --accent-nav-9: hsl(217 98% 70%);
+  --accent-nav-7: hsl(217 92% 64%);
+  --accent-nav-soft: hsl(217 98% 70% / 0.14);
+  --accent-nav-border: var(--accent-9);
 
   --success: hsl(142 50% 42%);
   --warning: hsl(38 65% 52%);

@@ -133,7 +133,7 @@ export default function Inbox({
           </div>
         </Panel>
 
-        <Panel title="Compose" subtitle="Send a direct message or broadcast." variant="sunken">
+        <Panel title="Compose" subtitle="Send a direct message or broadcast." variant="sunken" className="inbox_compose_panel">
           <div className="inbox_panel_body">
             {!token ? (
               <EmptyState title="Login required" description="Sign in to send messages." />

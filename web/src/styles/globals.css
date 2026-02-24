@@ -38,13 +38,21 @@ textarea {
   outline-offset: 2px;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--stroke-2) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--stroke-2);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-track {

@@ -13,7 +13,7 @@ export default function Sidebar({
   footerAction
 }) {
   return (
-    <aside className={cx("sidebar", { "is-open": isOpen })}>
+    <aside className={cx("sidebar", { "is-open": isOpen, "is-collapsed": collapsed })}>
       <div className="sidebar_header">
         <div className="brand">
           {brand?.logo ? <img className="brand_logo" src={brand.logo} alt="Kivo logo" /> : null}
@@ -37,6 +37,7 @@ export default function Sidebar({
         ))}
       </nav>
       <div className="sidebar_footer">
+        <div className="nav_divider" />
         {footerAction ? (
           <button
             className={cx("nav_item", { active: activeId === footerAction.id })}

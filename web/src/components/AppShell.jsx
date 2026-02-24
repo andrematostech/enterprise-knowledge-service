@@ -11,9 +11,13 @@ export default function AppShell({
   toasts,
   onDismissToast,
   sidebarOpen,
-  onCloseSidebar
+  onCloseSidebar,
+  contentClassName
 }) {
-  const layoutClass = rightRailProps ? "app_shell" : "app_shell app_shell--no-rail";
+  const layoutClass = [
+    rightRailProps ? "app_shell" : "app_shell app_shell--no-rail",
+    sidebarProps?.collapsed ? "app_shell--collapsed" : ""
+  ].filter(Boolean).join(" ");
   return (
     <div className={layoutClass}>
       {sidebarOpen ? <div className="sidebar_overlay" onClick={onCloseSidebar} role="presentation" /> : null}
@@ -22,14 +26,14 @@ export default function AppShell({
         <div className="main_layout">
           <Topbar {...topbarProps} />
           <div className="main_column">
-            <div className="content_scroll">{children}</div>
+            <div className={`content_scroll ${contentClassName || ""}`}>{children}</div>
           </div>
           <RightRail {...rightRailProps} />
         </div>
       ) : (
         <div className="main_column">
           <Topbar {...topbarProps} />
-          <div className="content_scroll">{children}</div>
+          <div className={`content_scroll ${contentClassName || ""}`}>{children}</div>
         </div>
       )}
       <Toasts items={toasts} onDismiss={onDismissToast} />
