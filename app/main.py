@@ -6,6 +6,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.knowledge_bases import router as knowledge_base_router
 from app.api.routes.documents import router as documents_router
 from app.api.routes.ingestion import router as ingestion_router
+from app.api.routes.calendar import router as calendar_router
 from app.api.routes.query import router as query_router
 from app.api.routes.messages import router as messages_router
 from app.core.config import Settings
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(ingestion_router, prefix="/api/v1")
     app.include_router(query_router, prefix="/api/v1")
     app.include_router(messages_router, prefix="/api/v1")
+    app.include_router(calendar_router, prefix="/api/v1")
 
     return app
 

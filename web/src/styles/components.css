@@ -474,14 +474,23 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
+  max-height: calc(100vh - 60px);
+  height: calc(100vh - 60px);
 }
 
 .right_rail .panel {
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
   box-shadow: var(--shadow-1), var(--highlight-1);
+}
+
+.right_rail .panel:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .main_layout .right_rail {
@@ -719,7 +728,7 @@
 }
 
 .right_rail .list {
-  gap: 8px;
+  gap: 10px;
 }
 
 .list_row {
@@ -743,7 +752,11 @@
 .tips_list .list_row {
   border: none;
   background: transparent;
-  padding: 5px 0;
+  padding: 2px 0;
+}
+
+.tips_list {
+  gap: 9px;
 }
 
 .toast_stack {
@@ -795,6 +808,11 @@
 .announcement_tiles {
   display: grid;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 .announcement_tile {
@@ -1011,6 +1029,12 @@
   gap: 10px;
 }
 
+.home_split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .grid_two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1023,6 +1047,9 @@
 
 @media (max-width: 960px) {
   .grid_two {
+    grid-template-columns: 1fr;
+  }
+  .home_split {
     grid-template-columns: 1fr;
   }
   .metric_grid {
@@ -1519,7 +1546,8 @@
   display: grid;
   justify-items: center;
   gap: 6px;
-  padding: 10px;
+  padding: 14px 10px;
+  min-height: 118px;
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
@@ -1527,8 +1555,8 @@
 }
 
 .weekly_forecast_icon {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
@@ -1538,20 +1566,175 @@
 }
 
 .weekly_forecast_icon svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .weekly_forecast_label {
-  font-size: var(--fs-0);
+  font-size: var(--fs-1);
   color: var(--text-2);
 }
 
 .weekly_forecast_temp {
   display: grid;
   gap: 2px;
+  font-size: var(--fs-1);
+  color: var(--text-3);
+}
+
+.calendar {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: var(--fw-medium);
+  color: var(--text-1);
+}
+
+.calendar_grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.calendar_weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.calendar_weekday {
   font-size: var(--fs-0);
   color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.calendar_day {
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-md);
+  padding: 10px;
+  min-height: 64px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  position: relative;
+  cursor: pointer;
+}
+
+.calendar_day_value {
+  color: var(--text-2);
+  font-size: var(--fs-0);
+  text-align: right;
+}
+
+.calendar_day--muted {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-3);
+  cursor: default;
+}
+
+.calendar_day--active {
+  border-color: var(--accent-7);
+  box-shadow: inset 0 0 0 1px var(--accent-5);
+}
+
+.calendar_day_dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent-9);
+  justify-self: start;
+}
+
+.calendar_event_tooltip {
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% + 8px);
+  background: var(--surface-3);
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-md);
+  padding: 8px;
+  width: 180px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-1);
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 20;
+}
+
+.calendar_day:hover .calendar_event_tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.calendar_event_title {
+  font-weight: var(--fw-semibold);
+  color: var(--text-1);
+  font-size: var(--fs-0);
+}
+
+.calendar_event_note {
+  color: var(--text-3);
+  font-size: var(--fs-0);
+}
+
+.calendar_editor {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stroke-1);
+  display: grid;
+  gap: 10px;
+}
+
+.calendar_editor_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: var(--fw-medium);
+  color: var(--text-1);
+}
+
+.calendar_editor_body {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar_events {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar_event_row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--stroke-1);
+  background: var(--surface-2);
+}
+
+.calendar_event_actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.calendar_editor_actions {
+  display: flex;
+  gap: 10px;
 }
 
 .field_label {

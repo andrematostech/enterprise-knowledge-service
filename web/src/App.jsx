@@ -84,6 +84,11 @@ export default function App() {
   const [healthStatus, setHealthStatus] = useState("Unknown");
   const [healthLoading, setHealthLoading] = useState(false);
 
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
@@ -124,6 +129,12 @@ export default function App() {
   const authReady = Boolean(apiKey || token);
   const settingsIncomplete = !baseUrl || !authReady;
   const kbMissing = !kbId;
+
+  const calendarMonthKey = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = String(calendarMonth.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }, [calendarMonth]);
 
   const fetchMe = async () => {
     if (!token) return;
@@ -318,6 +329,81 @@ export default function App() {
       setInboxError(err.message || "Failed to load inbox");
     } finally {
       setInboxLoading(false);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    if (!token) return;
+    setCalendarLoading(true);
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/calendar/events?month=${calendarMonthKey}`,
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load calendar");
+      setCalendarEvents(Array.isArray(data) ? data : []);
+      setCalendarError("");
+    } catch (err) {
+      setCalendarError(err.message || "Failed to load calendar");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  const createCalendarEvent = async (payload) => {
+    if (!token) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: "/api/v1/calendar/events",
+        method: "POST",
+        headers: buildHeaders({ token, includeApiKey: false, json: true }),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to create event");
+      setCalendarEvents((prev) => [...prev, data].sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""))));
+      return data;
+    } catch (err) {
+      pushToast("error", err.message || "Failed to create event");
+      return null;
+    }
+  };
+
+  const updateCalendarEvent = async (eventId, payload) => {
+    if (!token) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/calendar/events/${eventId}`,
+        method: "PATCH",
+        headers: buildHeaders({ token, includeApiKey: false, json: true }),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to update event");
+      setCalendarEvents((prev) => prev.map((event) => (event.id === eventId ? data : event)));
+      return data;
+    } catch (err) {
+      pushToast("error", err.message || "Failed to update event");
+      return null;
+    }
+  };
+
+  const deleteCalendarEvent = async (eventId) => {
+    if (!token) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/calendar/events/${eventId}`,
+        method: "DELETE",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to delete event");
+      setCalendarEvents((prev) => prev.filter((event) => event.id !== eventId));
+      return data;
+    } catch (err) {
+      pushToast("error", err.message || "Failed to delete event");
+      return null;
     }
   };
 
@@ -631,6 +717,14 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [token, baseUrl]);
 
+  useEffect(() => {
+    if (token && baseUrl) {
+      fetchCalendarEvents();
+    } else {
+      setCalendarEvents([]);
+    }
+  }, [token, baseUrl, calendarMonthKey]);
+
   const navItems = [
     { id: "home", label: "Home", icon: <FiHome /> },
     { id: "query", label: "Ask AI", icon: <FiSearch /> },
@@ -715,6 +809,14 @@ export default function App() {
         onGoQuery={() => setActiveTab("query")}
         onGoDocuments={() => setActiveTab("documents")}
         statusHint={settingsIncomplete ? "Connect your backend to activate" : "Workspace ready"}
+        calendarMonth={calendarMonth}
+        onCalendarMonth={setCalendarMonth}
+        calendarEvents={calendarEvents}
+        calendarLoading={calendarLoading}
+        calendarError={calendarError}
+        onCreateEvent={createCalendarEvent}
+        onUpdateEvent={updateCalendarEvent}
+        onDeleteEvent={deleteCalendarEvent}
       />
     ),
     documents: (
