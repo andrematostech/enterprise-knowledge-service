@@ -1,42 +1,53 @@
 ﻿:root {
-  --surface-0: hsl(0 0% 4%);
-  --surface-1: hsl(0 0% 6%);
-  --surface-2: hsl(0 0% 8%);
-  --surface-3: hsl(0 0% 11%);
+  /* =========================
+     DARK MODE (DEFAULT)
+     ========================= */
 
-  --stroke-1: hsl(0 0% 14%);
-  --stroke-2: hsl(0 0% 24%);
+  --surface-0: hsl(0 0% 3%);    /* app background */
+  --surface-1: hsl(0 0% 5%);
+  --surface-2: hsl(0 0% 9%);    /* panels */
+  --surface-3: hsl(0 0% 12%);   /* elevated */
 
-  --text-1: hsl(0 0% 96%);
-  --text-2: hsl(0 0% 70%);
-  --text-3: hsl(0 0% 45%);
+  --stroke-1: hsl(0 0% 16%);
+  --stroke-2: hsl(0 0% 26%);
+
+  --text-1: hsl(0 0% 92%);
+  --text-2: hsl(0 0% 76%);
+  --text-3: hsl(0 0% 48%);
   --text-inverse: hsl(0 0% 8%);
 
+  /* Accent System */
   --accent-9: hsl(217 90% 60%);
   --accent-7: hsl(217 80% 55%);
   --accent-5: hsl(217 65% 42%);
   --accent-soft: hsl(217 90% 60% / 0.12);
   --accent-border: hsl(217 80% 55% / 0.5);
   --focus-ring: hsl(217 100% 65% / 0.5);
+
+  /* Navigation Accent */
   --accent-nav-9: hsl(217 98% 70%);
   --accent-nav-7: hsl(217 92% 64%);
   --accent-nav-soft: hsl(217 98% 70% / 0.14);
   --accent-nav-border: var(--accent-9);
 
+  /* Status */
   --success: hsl(142 50% 42%);
   --warning: hsl(38 65% 52%);
   --danger: hsl(0 60% 52%);
 
-  --overlay-1: hsl(0 0% 4% / 0.6);
-  --overlay-2: hsl(0 0% 4% / 0.4);
-  --hover-1: hsl(0 0% 14% / 0.35);
-  --sidebar-edge: hsl(0 0% 4% / 0.4);
+  /* Overlays / Effects */
+  --overlay-1: hsl(0 0% 3% / 0.6);
+  --overlay-2: hsl(0 0% 3% / 0.4);
+  --hover-1: hsl(0 0% 16% / 0.35);
+  --sidebar-edge: hsl(0 0% 3% / 0.4);
 
+  /* Radius */
   --r-sm: 8px;
   --r-md: 10px;
   --r-lg: 12px;
   --r-xl: 16px;
 
+  /* Spacing */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -44,11 +55,14 @@
   --s-5: 24px;
   --s-6: 32px;
 
+  /* Shadows */
   --shadow-1: 0 1px 2px hsl(0 0% 0% / 0.35);
   --shadow-2: 0 4px 10px hsl(0 0% 0% / 0.3);
   --shadow-3: 0 10px 22px hsl(0 0% 0% / 0.35);
+
   --highlight-1: inset 0 1px 0 hsl(0 0% 100% / 0.02);
 
+  /* Typography Scale */
   --fs-0: 12px;
   --fs-1: 14px;
   --fs-2: 16px;
@@ -60,19 +74,24 @@
   --fw-semibold: 650;
 }
 
-body.theme-light {
-  --surface-0: hsl(0 0% 96%);
-  --surface-1: hsl(0 0% 94%);
-  --surface-2: hsl(0 0% 92%);
-  --surface-3: hsl(0 0% 89%);
 
-  --stroke-1: hsl(0 0% 78%);
-  --stroke-2: hsl(0 0% 68%);
+/* =========================
+   LIGHT MODE
+   ========================= */
+
+body.theme-light {
+  --surface-0: hsl(0 0% 92%);
+  --surface-1: hsl(0 0% 92%);
+  --surface-2: hsl(0 0% 89%);
+  --surface-3: hsl(0 0% 84%);
+
+  --stroke-1: hsl(0 0% 75%);
+  --stroke-2: hsl(0 0% 65%);
 
   --text-1: hsl(0 0% 12%);
-  --text-2: hsl(0 0% 35%);
-  --text-3: hsl(0 0% 50%);
-  --text-inverse: hsl(0 0% 96%);
+  --text-2: hsl(0 0% 32%);
+  --text-3: hsl(0 0% 48%);
+  --text-inverse: hsl(0 0% 94%);
 
   --overlay-1: hsl(0 0% 0% / 0.15);
   --overlay-2: hsl(0 0% 0% / 0.08);
@@ -82,5 +101,6 @@ body.theme-light {
   --shadow-1: 0 1px 2px hsl(0 0% 0% / 0.12);
   --shadow-2: 0 4px 10px hsl(0 0% 0% / 0.12);
   --shadow-3: 0 10px 22px hsl(0 0% 0% / 0.16);
+
   --highlight-1: inset 0 1px 0 hsl(0 0% 100% / 0.35);
 }

@@ -15,8 +15,7 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 def is_admin_user(db: Session, user: User) -> bool:
-    first_user = db.execute(select(User).order_by(User.created_at.asc())).scalars().first()
-    return bool(first_user and first_user.id == user.id)
+    return bool(user.is_admin)
 
 
 @router.get("/inbox", response_model=list[MessageRead])

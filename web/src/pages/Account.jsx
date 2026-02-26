@@ -5,6 +5,8 @@ import { formatDateTime } from "../lib/format.js";
 
 export default function Account({
   currentUser,
+  adminUsers,
+  adminUsersLoading,
   loginEmail,
   setLoginEmail,
   loginPassword,
@@ -26,6 +28,10 @@ export default function Account({
   onLogin,
   onRegister,
   onLogout,
+  onDeleteAccount,
+  onDeleteUser,
+  onToggleAdmin,
+  onRefreshUsers,
   loading
 }) {
   return (
@@ -58,6 +64,43 @@ export default function Account({
             <Input label="Role" value={currentUser.is_admin ? "Admin" : "Member"} readOnly />
             <Input label="Created" value={formatDateTime(currentUser.created_at)} readOnly />
             <Button variant="ghost" onClick={onLogout}>Log out</Button>
+            {currentUser.is_admin || (adminUsers?.length && adminUsers.every((user) => !user.is_admin)) ? (
+              <>
+                <Button variant="ghost" onClick={onDeleteAccount}>Delete account</Button>
+                <div className="account_admin_header">
+                  <div>
+                    <div className="panel_title">All users</div>
+                    <div className="panel_subtitle">Manage registered accounts.</div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={onRefreshUsers} disabled={adminUsersLoading}>
+                    {adminUsersLoading ? "Refreshing..." : "Refresh"}
+                  </Button>
+                </div>
+                <div className="list">
+                  {(adminUsers || []).map((user) => (
+                    <div key={user.id} className="list_row account_user_row">
+                      <div>
+                        <div>{user.full_name || user.email}</div>
+                        <div className="panel_subtitle">{user.email}</div>
+                      </div>
+                      <div className="account_user_actions">
+                        <span className="badge">{user.is_admin ? "Admin" : "Member"}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onToggleAdmin(user.id, !user.is_admin)}
+                        >
+                          {user.is_admin ? "Remove admin" : "Make admin"}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => onDeleteUser(user.id)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         </Panel>
       ) : (

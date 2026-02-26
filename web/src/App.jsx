@@ -30,6 +30,8 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("kivo_token") || "");
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -134,6 +136,7 @@ export default function App() {
       });
       if (!res.ok) throw new Error(extractDetail(data) || "Authentication failed");
       setCurrentUser(data);
+      return data;
     } catch (err) {
       pushToast("error", err.message || "Session expired");
       setToken("");
@@ -143,10 +146,92 @@ export default function App() {
     }
   };
 
+  const fetchAdminUsers = async () => {
+    if (!token) return;
+    setAdminUsersLoading(true);
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: "/api/v1/auth/users",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load users");
+      setAdminUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      pushToast("error", err.message || "Failed to load users");
+    } finally {
+      setAdminUsersLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     setToken("");
     setCurrentUser(null);
     pushToast("success", "Logged out.");
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!token || !currentUser?.id) return;
+    const confirmed = window.confirm("Delete this account? This cannot be undone.");
+    if (!confirmed) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/auth/users/${currentUser.id}`,
+        method: "DELETE",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to delete account");
+      pushToast("success", "Account deleted.");
+      handleLogout();
+    } catch (err) {
+      pushToast("error", err.message || "Failed to delete account");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!token) return;
+    const confirmed = window.confirm("Delete this user? This cannot be undone.");
+    if (!confirmed) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/auth/users/${userId}`,
+        method: "DELETE",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to delete user");
+      setAdminUsers((prev) => prev.filter((user) => user.id !== userId));
+      pushToast("success", "User deleted.");
+      if (currentUser?.id === userId) {
+        handleLogout();
+      }
+    } catch (err) {
+      pushToast("error", err.message || "Failed to delete user");
+    }
+  };
+
+  const handleToggleAdmin = async (userId, nextAdmin) => {
+    if (!token) return;
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/auth/users/${userId}/role`,
+        method: "PATCH",
+        headers: buildHeaders({ token, includeApiKey: false, json: true }),
+        body: JSON.stringify({ is_admin: nextAdmin })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to update role");
+      setAdminUsers((prev) =>
+        prev.map((user) => (user.id === userId ? { ...user, is_admin: nextAdmin } : user))
+      );
+      if (currentUser?.id === userId) {
+        setCurrentUser((prev) => (prev ? { ...prev, is_admin: nextAdmin } : prev));
+      }
+      pushToast("success", "Role updated.");
+    } catch (err) {
+      pushToast("error", err.message || "Failed to update role");
+    }
   };
 
   const handleLogin = async () => {
@@ -527,11 +612,14 @@ export default function App() {
 
   useEffect(() => {
     if (token) {
-      fetchMe();
+      fetchMe().then(() => {
+        fetchAdminUsers();
+      });
       fetchInbox();
     } else {
       setCurrentUser(null);
       setInboxMessages([]);
+      setAdminUsers([]);
     }
   }, [token, baseUrl]);
 
@@ -719,6 +807,8 @@ export default function App() {
     account: (
       <Account
         currentUser={currentUser}
+        adminUsers={adminUsers}
+        adminUsersLoading={adminUsersLoading}
         loginEmail={loginEmail}
         setLoginEmail={setLoginEmail}
         loginPassword={loginPassword}
@@ -740,6 +830,10 @@ export default function App() {
         onLogin={handleLogin}
         onRegister={handleRegister}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
+        onDeleteUser={handleDeleteUser}
+        onToggleAdmin={handleToggleAdmin}
+        onRefreshUsers={fetchAdminUsers}
         loading={authLoading}
       />
     )

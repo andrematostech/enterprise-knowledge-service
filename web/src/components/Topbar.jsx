@@ -47,15 +47,17 @@ export default function Topbar({
           </Button>
         ))}
         {onToggleTheme ? (
-          <Button
-            className="theme_toggle"
-            variant="ghost"
-            size="sm"
+          <button
+            className={`theme_pill ${themeMode === "light" ? "is-light" : "is-dark"}`}
+            type="button"
             onClick={onToggleTheme}
             aria-label="Toggle theme"
           >
-            {themeMode === "light" ? <FiMoon /> : <FiSun />}
-          </Button>
+            <span className="theme_pill_track" />
+            <span className="theme_pill_thumb">
+              {themeMode === "light" ? <FiSun /> : <FiMoon />}
+            </span>
+          </button>
         ) : null}
         <div className="avatar">
           {avatar ? <img src={avatar} alt="Avatar" /> : initials || "?"}

@@ -161,15 +161,15 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--text-1);
 }
 
 .brand_logo {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 
@@ -211,23 +211,24 @@
 }
 
 .nav_item.active {
-  background: var(--accent-nav-soft);
+  background: transparent;
   border-color: var(--accent-nav-border);
   color: var(--text-1);
   box-shadow: inset 0 0 0 1px hsl(217 92% 70% / 0.35);
 }
 
 .nav_item:hover {
-  background: var(--surface-2);
-  border-color: var(--text-1);
+  background: transparent;
+  border-color: var(--stroke-2);
   border-width: 0.5px;
   color: var(--text-1);
 }
 
 .nav_item.active:hover {
-  background: var(--accent-nav-soft);
+  background: transparent;
   border-color: var(--accent-nav-border);
   border-width: 1px;
+  box-shadow: inset 0 0 0 1px hsl(217 92% 70% / 0.35);
 }
 
 .nav_divider {
@@ -272,8 +273,8 @@
 }
 
 .sidebar_profile .avatar {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   background: var(--accent-soft);
   display: grid;
@@ -317,7 +318,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 490px;
   grid-template-rows: auto 1fr;
-  column-gap: 2px;
+  column-gap: 0;
   background: var(--surface-1);
   min-width: 0;
   min-height: 0;
@@ -337,9 +338,14 @@
   border-right: 1px solid var(--stroke-1);
 }
 
+.main_layout {
+  border-right: 1px solid var(--stroke-1);
+}
+
 .main_layout .right_rail {
   grid-column: 2;
   grid-row: 2;
+  border-top: 1px solid var(--stroke-1);
 }
 
 .main_layout .content_scroll {
@@ -396,14 +402,50 @@
   height: 35px;
 }
 
-.btn.theme_toggle {
-  border-color: var(--accent-9);
-  color: var(--text-1);
+.theme_pill {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke-2);
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.btn.theme_toggle:hover {
-  border-color: var(--accent-9);
-  color: var(--text-1);
+.theme_pill_track {
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.theme_pill_thumb {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  border: 1px solid var(--stroke-2);
+  display: grid;
+  place-items: center;
+  color: var(--accent-9);
+  transition: transform 0.2s ease;
+  z-index: 1;
+}
+
+.theme_pill.is-light .theme_pill_thumb {
+  transform: translateX(10px);
+}
+
+.theme_pill.is-dark .theme_pill_thumb {
+  transform: translateX(-10px);
+}
+
+.theme_pill:hover {
   box-shadow: 0 0 0 2px hsl(217 98% 70% / 0.18);
 }
 
@@ -1046,9 +1088,35 @@
   gap: 12px;
 }
 
+.account_profile_header .avatar {
+  width: 44px;
+  height: 44px;
+}
+
 .account_profile_meta {
   display: grid;
   gap: 4px;
+}
+
+.account_admin_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.account_user_row {
+  align-items: center;
+}
+
+.account_layout .list {
+  gap: 10px;
+}
+
+.account_user_actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .account_inline {
@@ -1288,10 +1356,13 @@
 .query_layout {
   height: calc(100vh - 60px);
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
 }
 
 .content_scroll--locked .query_layout {
   height: 100%;
+  width: 100%;
 }
 
 .query_ask_panel {
@@ -1299,6 +1370,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .query_ask_panel .query_panel_body {
@@ -1320,12 +1392,21 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding-right: 0;
+  box-sizing: border-box;
+  border-radius: var(--r-lg);
+  min-width: 0;
 }
 
 .query_answer_panel .query_panel_body {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding-right: 12px;
+  scrollbar-gutter: stable both-edges;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .query_answer_panel {
