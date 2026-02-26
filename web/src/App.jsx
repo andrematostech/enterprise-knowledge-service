@@ -698,6 +698,7 @@ export default function App() {
       title: message.subject || "Announcement",
       preview: message.body,
       sender: message.sender_name || message.sender_email || "System",
+      senderPosition: message.sender_position || "",
       initials: getInitials(message.sender_name || message.sender_email || ""),
       avatar: message.sender_avatar_url,
       time: formatDateTime(message.created_at)
@@ -895,7 +896,10 @@ export default function App() {
                     <div>
                       <strong>{message.subject || "Announcement"}</strong>
                       <div className="panel_subtitle">{message.body}</div>
-                      <div className="panel_subtitle">{message.sender_name || message.sender_email || "System"}</div>
+                      <div className="panel_subtitle">
+                        {message.sender_name || message.sender_email || "System"}
+                        {message.sender_position ? ` • ${message.sender_position}` : ""}
+                      </div>
                     </div>
                     <div className="panel_subtitle">{formatDateTime(message.created_at)}</div>
                   </div>

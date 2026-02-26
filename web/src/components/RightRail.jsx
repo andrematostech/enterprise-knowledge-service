@@ -40,14 +40,19 @@ export default function RightRail({ statusRows, tips, announcements, onAnnouncem
                   <div className="avatar">
                     {item.avatar ? <img src={item.avatar} alt="Avatar" /> : item.initials}
                   </div>
-                  <span>{item.sender}</span>
+                  <div className="announcement_tile_sender">
+                    <span>{item.sender}</span>
+                    {item.senderPosition ? (
+                      <span className="panel_subtitle">{item.senderPosition}</span>
+                    ) : null}
+                  </div>
                 </div>
                 <span className="announcement_tile_time">{item.time}</span>
               </div>
-              <div>
+              <div className="announcement_tile_title">
                 <strong>{item.title}</strong>
               </div>
-              <div>{item.preview}</div>
+              <div className="announcement_tile_body">{item.preview}</div>
             </div>
           ))}
         </div>

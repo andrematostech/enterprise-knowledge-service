@@ -80,7 +80,12 @@ export default function Inbox({
                             getInitials(message.sender_name || message.sender_email || "")
                           )}
                         </div>
-                        <span>{message.sender_name || message.sender_email || "Unknown"}</span>
+                        <div className="inbox_sender_meta">
+                          <span>{message.sender_name || message.sender_email || "Unknown"}</span>
+                          {message.sender_position ? (
+                            <span className="panel_subtitle">{message.sender_position}</span>
+                          ) : null}
+                        </div>
                       </div>
                       <div className="inbox_meta_right">
                         <span className="inbox_time">{formatDateTime(message.created_at)}</span>
@@ -115,7 +120,10 @@ export default function Inbox({
           <div className="inbox_panel_body">
             {selected ? (
               <div className="list inbox_message_body">
-                <div className="panel_subtitle inbox_from_line">From: {selected.sender_email || "System"}</div>
+                <div className="panel_subtitle inbox_from_line">
+                  From: {selected.sender_email || "System"}
+                  {selected.sender_position ? ` • ${selected.sender_position}` : ""}
+                </div>
                 <strong>{selected.subject || "Message"}</strong>
                 <div className="inbox_message_text">{selected.body}</div>
                 <div className="inbox_message_actions">
