@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from app.models.ingest_run import IngestRun
 
@@ -38,3 +39,27 @@ class IngestRunRepository:
         self._db.commit()
         self._db.refresh(run)
         return run
+
+    def list_recent(self, knowledge_base_id: uuid.UUID, limit: int) -> list[IngestRun]:
+        return (
+            self._db.execute(
+                select(IngestRun)
+                .where(IngestRun.knowledge_base_id == knowledge_base_id)
+                .order_by(IngestRun.created_at.desc())
+                .limit(limit)
+            )
+            .scalars()
+            .all()
+        )
+
+    def get_last_finished_at(
+        self,
+        knowledge_base_id: uuid.UUID | None = None,
+        knowledge_base_ids: list[uuid.UUID] | None = None,
+    ):
+        stmt = select(func.max(IngestRun.finished_at)).where(IngestRun.finished_at.isnot(None))
+        if knowledge_base_id:
+            stmt = stmt.where(IngestRun.knowledge_base_id == knowledge_base_id)
+        if knowledge_base_ids:
+            stmt = stmt.where(IngestRun.knowledge_base_id.in_(knowledge_base_ids))
+        return self._db.execute(stmt).scalar()

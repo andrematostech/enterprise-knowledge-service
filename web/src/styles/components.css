@@ -1764,3 +1764,186 @@
   font-size: var(--fs-0);
   color: var(--text-3);
 }
+
+/* AppShell enterprise layout additions */
+.sidebar_group {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar_group_label {
+  font-size: var(--fs-0);
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: var(--s-2);
+}
+
+.sidebar_group_items {
+  display: grid;
+  gap: 10px;
+}
+
+.utilities_button {
+  justify-content: flex-start;
+}
+
+.topbar_search {
+  min-width: 220px;
+}
+
+.topbar_search .input {
+  height: 36px;
+}
+
+.topbar_icon_button {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--stroke-1);
+  background: transparent;
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.topbar_icon_button:hover {
+  border-color: var(--stroke-2);
+  color: var(--text-1);
+}
+
+.avatar_button {
+  border: 1px solid var(--stroke-1);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dashboard_layout {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard_metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard_row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.dashboard_tables {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.drawer_overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-1);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 70;
+}
+
+.drawer_panel {
+  width: min(420px, 90vw);
+  height: 100%;
+  background: var(--surface-2);
+  border-left: 1px solid var(--stroke-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer_header {
+  padding: 16px;
+  border-bottom: 1px solid var(--stroke-1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer_body {
+  padding: 16px;
+  overflow: auto;
+}
+
+.utilities_stack {
+  display: grid;
+  gap: 10px;
+}
+
+.utilities_weather {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.utilities_weather_day {
+  padding: 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--stroke-1);
+  background: var(--surface-1);
+  display: grid;
+  gap: 4px;
+}
+
+.utilities_weather_label {
+  color: var(--text-2);
+  font-size: var(--fs-0);
+}
+
+.utilities_weather_temp {
+  display: flex;
+  gap: 8px;
+  font-size: var(--fs-1);
+  color: var(--text-1);
+}
+
+.utilities_calendar {
+  display: grid;
+  gap: 12px;
+}
+
+.utilities_week_strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.utilities_week_day {
+  padding: 8px;
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-sm);
+  text-align: center;
+}
+
+.utilities_week_label {
+  display: block;
+  font-size: var(--fs-0);
+  color: var(--text-3);
+}
+
+.utilities_week_date {
+  font-size: var(--fs-1);
+  color: var(--text-1);
+}
+
+.utilities_upcoming .list {
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard_metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard_row,
+  .dashboard_tables {
+    grid-template-columns: 1fr;
+  }
+}

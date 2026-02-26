@@ -1,16 +1,16 @@
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+﻿import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { cx } from "../lib/classnames.js";
 
 export default function Sidebar({
   brand,
-  navItems,
+  navGroups,
   activeId,
   onSelect,
   collapsed,
   onToggle,
   account,
   isOpen,
-  footerAction
+  utilitiesAction
 }) {
   return (
     <aside className={cx("sidebar", { "is-open": isOpen, "is-collapsed": collapsed })}>
@@ -24,46 +24,52 @@ export default function Sidebar({
         </button>
       </div>
       <nav className="sidebar_nav">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={cx("nav_item", { active: activeId === item.id })}
-            type="button"
-            onClick={() => onSelect(item.id)}
-          >
-            {item.icon}
-            {!collapsed ? <span>{item.label}</span> : null}
-          </button>
+        {navGroups.map((group) => (
+          <div key={group.id} className="sidebar_group">
+            {!collapsed ? <div className="sidebar_group_label">{group.label}</div> : null}
+            <div className="sidebar_group_items">
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  className={cx("nav_item", { active: activeId === item.id })}
+                  type="button"
+                  onClick={() => onSelect(item.id)}
+                >
+                  {item.icon}
+                  {!collapsed ? <span>{item.label}</span> : null}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
       <div className="sidebar_footer">
         <div className="nav_divider" />
-        {footerAction ? (
+        {utilitiesAction ? (
           <button
-            className={cx("nav_item", { active: activeId === footerAction.id })}
+            className={cx("nav_item", "utilities_button", { active: activeId === utilitiesAction.id })}
             type="button"
-            onClick={() => onSelect(footerAction.id)}
+            onClick={utilitiesAction.onClick}
           >
-            {footerAction.icon}
-            {!collapsed ? <span>{footerAction.label}</span> : null}
+            {utilitiesAction.icon}
+            {!collapsed ? <span>{utilitiesAction.label}</span> : null}
           </button>
-        ) : (
-          <button
-            className="sidebar_profile sidebar_profile_button"
-            type="button"
-            onClick={() => onSelect("account")}
-          >
-            <div className="avatar">
-              {account?.avatar ? <img src={account.avatar} alt="Avatar" /> : account?.initials || "?"}
+        ) : null}
+        <button
+          className="sidebar_profile sidebar_profile_button"
+          type="button"
+          onClick={() => onSelect("account")}
+        >
+          <div className="avatar">
+            {account?.avatar ? <img src={account.avatar} alt="Avatar" /> : account?.initials || "?"}
+          </div>
+          {!collapsed ? (
+            <div className="meta">
+              <span>{account?.name || "Account"}</span>
+              <span>{account?.subtitle || ""}</span>
             </div>
-            {!collapsed ? (
-              <div className="meta">
-                <span>{account?.name || "Account"}</span>
-                <span>{account?.subtitle || ""}</span>
-              </div>
-            ) : null}
-          </button>
-        )}
+          ) : null}
+        </button>
       </div>
     </aside>
   );

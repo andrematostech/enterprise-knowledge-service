@@ -1,4 +1,4 @@
-import { FiMenu, FiMoon, FiSun } from "react-icons/fi";
+﻿import { FiBell, FiMenu } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
@@ -8,7 +8,9 @@ export default function Topbar({
   workspaceItems,
   workspaceValue,
   onWorkspaceChange,
-  actions,
+  searchValue,
+  onSearchChange,
+  onAlerts,
   avatar,
   initials,
   onMobileMenu,
@@ -35,17 +37,17 @@ export default function Topbar({
             options={workspaceItems}
           />
         ) : null}
-        {actions?.map((action) => (
-          <Button
-            key={action.label}
-            variant={action.variant}
-            size="sm"
-            onClick={action.onClick}
-            disabled={action.disabled}
-          >
-            {action.label}
-          </Button>
-        ))}
+        <div className="topbar_search">
+          <input
+            className="input"
+            placeholder="Search"
+            value={searchValue}
+            onChange={(event) => onSearchChange?.(event.target.value)}
+          />
+        </div>
+        <button className="topbar_icon_button" type="button" onClick={onAlerts} aria-label="Alerts">
+          <FiBell />
+        </button>
         {onToggleTheme ? (
           <button
             className={`theme_pill ${themeMode === "light" ? "is-light" : "is-dark"}`}
@@ -54,14 +56,12 @@ export default function Topbar({
             aria-label="Toggle theme"
           >
             <span className="theme_pill_track" />
-            <span className="theme_pill_thumb">
-              {themeMode === "light" ? <FiSun /> : <FiMoon />}
-            </span>
+            <span className="theme_pill_thumb" />
           </button>
         ) : null}
-        <div className="avatar">
+        <button className="avatar avatar_button" type="button" aria-label="User menu">
           {avatar ? <img src={avatar} alt="Avatar" /> : initials || "?"}
-        </div>
+        </button>
       </div>
     </header>
   );

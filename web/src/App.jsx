@@ -1,15 +1,22 @@
+﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiBarChart2,
+  FiDatabase,
   FiFileText,
+  FiGrid,
   FiHome,
   FiInbox,
+  FiLayers,
+  FiMessageCircle,
   FiSearch,
-  FiSettings,
-  FiUser
+  FiSettings
 } from "react-icons/fi";
 import AppShell from "./components/AppShell.jsx";
-import Home from "./pages/Home.jsx";
+import Drawer from "./components/Drawer.jsx";
+import Panel from "./components/Panel.jsx";
+import EmptyState from "./components/EmptyState.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 import Documents from "./pages/Documents.jsx";
 import Query from "./pages/Query.jsx";
 import Inbox from "./pages/Inbox.jsx";
@@ -24,7 +31,7 @@ import logo from "./assets/logo.png";
 const defaultBaseUrl = "http://127.0.0.1:8000";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem("baseUrl") || defaultBaseUrl);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("apiKey") || "changeme");
   const [token, setToken] = useState(() => localStorage.getItem("kivo_token") || "");
@@ -93,6 +100,8 @@ export default function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem("themeMode") || "dark");
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [utilitiesOpen, setUtilitiesOpen] = useState(false);
 
   const [toasts, setToasts] = useState([]);
 
@@ -362,7 +371,9 @@ export default function App() {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(extractDetail(data) || "Failed to create event");
-      setCalendarEvents((prev) => [...prev, data].sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""))));
+      setCalendarEvents((prev) =>
+        [...prev, data].sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
+      );
       return data;
     } catch (err) {
       pushToast("error", err.message || "Failed to create event");
@@ -725,35 +736,102 @@ export default function App() {
     }
   }, [token, baseUrl, calendarMonthKey]);
 
-  const navItems = [
-    { id: "home", label: "Home", icon: <FiHome /> },
-    { id: "query", label: "Ask AI", icon: <FiSearch /> },
-    { id: "documents", label: "Documents", icon: <FiFileText /> },
-    { id: "inbox", label: "Inbox", icon: <FiInbox /> },
-    { id: "usage", label: "Usage", icon: <FiBarChart2 /> },
-    { id: "settings", label: "Settings", icon: <FiSettings /> }
+  const navGroups = [
+    {
+      id: "workspace",
+      label: "Workspace",
+      items: [{ id: "dashboard", label: "Dashboard", icon: <FiHome /> }]
+    },
+    {
+      id: "ask",
+      label: "Ask",
+      items: [
+        { id: "query", label: "Ask AI", icon: <FiSearch /> },
+        { id: "conversations", label: "Conversations", icon: <FiMessageCircle /> }
+      ]
+    },
+    {
+      id: "knowledge",
+      label: "Knowledge",
+      items: [
+        { id: "documents", label: "Documents", icon: <FiFileText /> },
+        { id: "ingestion", label: "Ingestion", icon: <FiLayers /> },
+        { id: "retrieval", label: "Retrieval", icon: <FiDatabase /> }
+      ]
+    },
+    {
+      id: "messages",
+      label: "Messages",
+      items: [{ id: "inbox", label: "Inbox", icon: <FiInbox /> }]
+    },
+    {
+      id: "insights",
+      label: "Insights",
+      items: [{ id: "usage", label: "Usage", icon: <FiBarChart2 /> }]
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      items: [{ id: "settings", label: "Settings", icon: <FiSettings /> }]
+    }
   ];
 
-  const accountItem = { id: "account", label: "Account", icon: <FiUser /> };
-
   const pageTitleMap = {
-    home: "Home",
+    dashboard: "Dashboard",
     query: "Ask AI",
     documents: "Documents",
     inbox: "Inbox",
     usage: "Usage",
     settings: "Settings",
-    account: "Account"
+    account: "Account",
+    conversations: "Conversations",
+    ingestion: "Ingestion",
+    retrieval: "Retrieval"
   };
 
   const broadcastMessages = inboxMessages.filter((message) => message.scope === "broadcast");
 
-  const metrics = [
-    { label: "Documents", value: documents.length || 0, sub: documents.length ? `${documents.length} total` : "No documents" },
-    { label: "Queries", value: queryCount || 0, sub: avgLatencyMs ? `Avg ${avgLatencyMs} ms` : "No queries" },
-    { label: "Last indexed", value: lastIngestAt ? formatDateTime(lastIngestAt) : "-", sub: lastIngestAt ? "Last run" : "Not indexed" },
-    { label: "Latency", value: lastLatencyMs ? `${lastLatencyMs} ms` : "-", sub: avgLatencyMs ? `Avg ${avgLatencyMs} ms` : "No data" }
+  const dashboardMetrics = [
+    {
+      label: "Docs Indexed",
+      value: documents.length || 0,
+      sub: documents.length ? `${documents.length} total` : "No documents"
+    },
+    {
+      label: "Queries (7d)",
+      value: queryCount || 0,
+      sub: queryCount ? `${queryCount} total` : "No queries"
+    },
+    {
+      label: "Avg Latency",
+      value: avgLatencyMs ? `${avgLatencyMs} ms` : "-",
+      sub: avgLatencyMs ? "Average" : "No data"
+    },
+    {
+      label: "Last Ingest",
+      value: lastIngestAt ? formatDateTime(lastIngestAt) : "-",
+      sub: lastIngestAt ? "Last run" : "Not indexed"
+    }
   ];
+
+  const retrievalSnapshot = [
+    { label: "Top-k", value: topK },
+    { label: "Model", value: response?.model || "Default" },
+    { label: "Vector DB", value: "Chroma" },
+    { label: "Last indexed", value: lastIngestAt ? formatDateTime(lastIngestAt) : "-" }
+  ];
+
+  const recentQueries = response && question
+    ? [
+        {
+          question,
+          latency: lastLatencyMs ? `${lastLatencyMs} ms` : "-",
+          time: formatDateTime(new Date().toISOString())
+        }
+      ]
+    : [];
+
+  const recentIngests = [];
 
   const usageMetrics = [
     { label: "Monthly queries", value: queryCount || 0, sub: "Total" },
@@ -776,7 +854,7 @@ export default function App() {
     return term ? list.filter((doc) => doc.name.toLowerCase().includes(term)) : list;
   }, [documents, docSearch]);
 
-  const rightRailProps = activeTab === "home" ? {
+  const rightRailProps = activeTab === "dashboard" ? {
     statusRows: [
       { label: "Connection", value: settingsIncomplete ? "Not configured" : "Configured" },
       { label: "Workspace", value: kbList.find((kb) => kb.id === kbId)?.name || "-" },
@@ -800,23 +878,44 @@ export default function App() {
     onAnnouncementsClick: () => setAnnouncementsOpen(true)
   } : null;
 
-  const topbarActions = [];
+  const weeklyWeather = [
+    { day: "Mon", condition: "Sunny", tempC: 22, tempF: 72 },
+    { day: "Tue", condition: "Cloudy", tempC: 19, tempF: 66 },
+    { day: "Wed", condition: "Rain", tempC: 17, tempF: 63 },
+    { day: "Thu", condition: "Cloudy", tempC: 20, tempF: 68 },
+    { day: "Fri", condition: "Sunny", tempC: 24, tempF: 75 },
+    { day: "Sat", condition: "Rain", tempC: 18, tempF: 64 },
+    { day: "Sun", condition: "Sunny", tempC: 23, tempF: 73 }
+  ];
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const upcomingEvents = [...calendarEvents]
+    .filter((event) => event.date >= todayKey)
+    .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
+    .slice(0, 5);
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + index);
+    return day;
+  });
+
+  const placeholderPanel = (title, subtitle) => (
+    <Panel title={title} subtitle={subtitle} variant="sunken">
+      <EmptyState title="Coming soon" subtitle="This section will be available soon." />
+    </Panel>
+  );
 
   const content = {
-    home: (
-      <Home
-        metrics={metrics}
-        onGoQuery={() => setActiveTab("query")}
-        onGoDocuments={() => setActiveTab("documents")}
-        statusHint={settingsIncomplete ? "Connect your backend to activate" : "Workspace ready"}
-        calendarMonth={calendarMonth}
-        onCalendarMonth={setCalendarMonth}
-        calendarEvents={calendarEvents}
-        calendarLoading={calendarLoading}
-        calendarError={calendarError}
-        onCreateEvent={createCalendarEvent}
-        onUpdateEvent={updateCalendarEvent}
-        onDeleteEvent={deleteCalendarEvent}
+    dashboard: (
+      <Dashboard
+        metrics={dashboardMetrics}
+        queryVolume={[]}
+        retrievalSnapshot={retrievalSnapshot}
+        recentQueries={recentQueries}
+        recentIngests={recentIngests}
       />
     ),
     documents: (
@@ -854,6 +953,9 @@ export default function App() {
         latency={lastLatencyMs}
       />
     ),
+    conversations: placeholderPanel("Conversations", "Threaded activity"),
+    ingestion: placeholderPanel("Ingestion", "Pipeline runs"),
+    retrieval: placeholderPanel("Retrieval", "Index diagnostics"),
     inbox: (
       <Inbox
         token={token}
@@ -947,12 +1049,17 @@ export default function App() {
       <AppShell
         sidebarProps={{
           brand: { logo, label: "KIVO" },
-          navItems,
+          navGroups,
           activeId: activeTab,
           onSelect: setActiveTab,
           collapsed: sidebarCollapsed,
           onToggle: () => setSidebarCollapsed((prev) => !prev),
-          footerAction: token ? null : accountItem,
+          utilitiesAction: {
+            id: "utilities",
+            label: "Utilities",
+            icon: <FiGrid />,
+            onClick: () => setUtilitiesOpen(true)
+          },
           account: {
             avatar: currentUser?.avatar_url || "",
             initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
@@ -962,7 +1069,16 @@ export default function App() {
         }}
         topbarProps={{
           title: pageTitleMap[activeTab],
-          actions: topbarActions,
+          workspaceLabel: "Workspace",
+          workspaceItems,
+          workspaceValue: kbId,
+          onWorkspaceChange: (value) => {
+            setKbId(value);
+            localStorage.setItem("kbSelectedByUser", "true");
+          },
+          searchValue: globalSearch,
+          onSearchChange: setGlobalSearch,
+          onAlerts: () => pushToast("info", "No alerts yet."),
           avatar: currentUser?.avatar_url || "",
           initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
           onMobileMenu: () => setMobileSidebarOpen(true),
@@ -970,7 +1086,6 @@ export default function App() {
           onToggleTheme: () => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))
         }}
         rightRailProps={rightRailProps}
-        contentClassName={activeTab === "query" ? "content_scroll--locked" : ""}
         toasts={toasts}
         onDismissToast={dismissToast}
         sidebarOpen={mobileSidebarOpen}
@@ -978,6 +1093,62 @@ export default function App() {
       >
         {content[activeTab]}
       </AppShell>
+
+      <Drawer title="Utilities" open={utilitiesOpen} onClose={() => setUtilitiesOpen(false)}>
+        <div className="utilities_stack">
+          <Panel title="Weather" subtitle="This week" variant="sunken">
+            <div className="utilities_weather">
+              {weeklyWeather.map((entry) => (
+                <div key={entry.day} className="utilities_weather_day">
+                  <div className="utilities_weather_label">{entry.day}</div>
+                  <div className="utilities_weather_temp">
+                    <span>{entry.tempC}°C</span>
+                    <span>{entry.tempF}°F</span>
+                  </div>
+                  <div className="panel_subtitle">{entry.condition}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+          <Panel title="Calendar" subtitle="Upcoming" variant="sunken">
+            <div className="utilities_calendar">
+              <div className="utilities_week_strip">
+                {weekDays.map((day) => (
+                  <div key={day.toISOString()} className="utilities_week_day">
+                    <span className="utilities_week_label">
+                      {day.toLocaleDateString("en-US", { weekday: "short" })}
+                    </span>
+                    <span className="utilities_week_date">{day.getDate()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="utilities_upcoming">
+                {calendarLoading ? (
+                  <EmptyState title="Loading events" subtitle="Syncing calendar." />
+                ) : calendarError ? (
+                  <EmptyState title="Calendar error" subtitle={calendarError} />
+                ) : upcomingEvents.length ? (
+                  <div className="list">
+                    {upcomingEvents.map((event) => (
+                      <div key={event.id} className="list_row">
+                        <div>
+                          <strong>{event.title}</strong>
+                          <div className="panel_subtitle">{event.note || "No details"}</div>
+                        </div>
+                        <div className="panel_subtitle">
+                          {event.date}{event.time ? ` · ${String(event.time).slice(0, 5)}` : ""}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState title="No events" subtitle="Add reminders in the calendar." />
+                )}
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </Drawer>
 
       {announcementsOpen ? (
         <div className="modal_overlay" onClick={() => setAnnouncementsOpen(false)} role="presentation">
@@ -1000,7 +1171,7 @@ export default function App() {
                       <div className="panel_subtitle">{message.body}</div>
                       <div className="panel_subtitle">
                         {message.sender_name || message.sender_email || "System"}
-                        {message.sender_position ? ` • ${message.sender_position}` : ""}
+                        {message.sender_position ? ` · ${message.sender_position}` : ""}
                       </div>
                     </div>
                     <div className="panel_subtitle">{formatDateTime(message.created_at)}</div>
