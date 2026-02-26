@@ -36,3 +36,16 @@ class VectorStoreService:
     def query(self, knowledge_base_id: str, embedding: list[float], top_k: int) -> dict:
         collection = self._client.get_or_create_collection(name=f"kb_{knowledge_base_id}")
         return collection.query(query_embeddings=[embedding], n_results=top_k, include=["documents", "metadatas", "distances"])
+
+    def delete_embeddings(
+        self,
+        knowledge_base_id: str,
+        ids: list[str] | None = None,
+        where: dict | None = None,
+    ) -> None:
+        collection = self._client.get_or_create_collection(name=f"kb_{knowledge_base_id}")
+        if ids:
+            collection.delete(ids=ids)
+            return
+        if where:
+            collection.delete(where=where)

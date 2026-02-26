@@ -19,6 +19,8 @@ class Document(Base):
     content_type: Mapped[str] = mapped_column(String(128), nullable=False)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_ingested_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     knowledge_base = relationship("KnowledgeBase", back_populates="documents")

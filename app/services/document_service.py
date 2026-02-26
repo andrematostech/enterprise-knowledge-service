@@ -6,8 +6,10 @@ from fastapi import UploadFile
 
 from app.core.config import Settings
 from app.models.document import Document
+from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.services.vector_store_service import VectorStoreService
 from app.utils.files import ensure_directory, sanitize_filename, save_upload_file
 
 
@@ -16,10 +18,14 @@ class DocumentService:
         self,
         document_repo: DocumentRepository,
         knowledge_base_repo: KnowledgeBaseRepository,
+        chunk_repo: ChunkRepository,
+        vector_store: VectorStoreService,
         settings: Settings,
     ) -> None:
         self._document_repo = document_repo
         self._knowledge_base_repo = knowledge_base_repo
+        self._chunk_repo = chunk_repo
+        self._vector_store = vector_store
         self._settings = settings
 
     def upload(self, knowledge_base_id: UUID, upload: UploadFile) -> Document:
@@ -64,6 +70,11 @@ class DocumentService:
             return False
         if document.knowledge_base_id != knowledge_base_id:
             return False
+
+        chunk_ids = self._chunk_repo.list_ids_by_document(document.id)
+        if chunk_ids:
+            self._vector_store.delete_embeddings(str(knowledge_base_id), ids=chunk_ids)
+            self._chunk_repo.delete_by_document(document.id)
 
         try:
             if os.path.exists(document.storage_path):

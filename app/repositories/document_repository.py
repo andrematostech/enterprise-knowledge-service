@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -28,4 +29,12 @@ class DocumentRepository:
 
     def delete(self, document: Document) -> None:
         self._db.delete(document)
+        self._db.commit()
+
+    def update_ingestion_state(self, document_id: UUID, content_hash: str, ingested_at: datetime) -> None:
+        document = self._db.get(Document, document_id)
+        if not document:
+            return
+        document.content_hash = content_hash
+        document.last_ingested_at = ingested_at
         self._db.commit()
