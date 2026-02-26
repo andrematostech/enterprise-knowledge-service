@@ -12,3 +12,7 @@ storage/
 build/
 dist/
 *.egg-info/
+
+app.zip
+*.zip
+
