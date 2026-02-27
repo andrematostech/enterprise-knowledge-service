@@ -91,6 +91,10 @@ class RagService:
                         generate_ms=generate_ms,
                         retrieved_k=payload.top_k,
                         retrieved_count=retrieved_count,
+                        prompt_tokens=None,
+                        completion_tokens=None,
+                        total_tokens=None,
+                        cost_usd=None,
                         model=self._settings.openai_gen_model or None,
                         embedding_model=self._settings.openai_embed_model,
                         vector_db="chroma",
@@ -111,10 +115,24 @@ class RagService:
             )
 
             generate_start = time.perf_counter()
-            answer = self._openai.generate_answer(system_prompt, user_prompt)
+            answer, usage = self._openai.generate_answer(system_prompt, user_prompt)
             generate_ms = int((time.perf_counter() - generate_start) * 1000)
             if not answer:
                 answer = "I don't have enough information in the provided documents."
+
+            prompt_tokens = usage.get("prompt_tokens") if usage else None
+            completion_tokens = usage.get("completion_tokens") if usage else None
+            total_tokens = usage.get("total_tokens") if usage else None
+            cost_usd = None
+            if (
+                usage
+                and self._settings.openai_prompt_cost_per_1k
+                and self._settings.openai_completion_cost_per_1k
+            ):
+                cost_usd = (
+                    (prompt_tokens or 0) * self._settings.openai_prompt_cost_per_1k
+                    + (completion_tokens or 0) * self._settings.openai_completion_cost_per_1k
+                ) / 1000
 
             response = QueryResponse(answer=answer, sources=sources)
             total_ms = int((time.perf_counter() - started) * 1000)
@@ -129,6 +147,10 @@ class RagService:
                     generate_ms=generate_ms,
                     retrieved_k=payload.top_k,
                     retrieved_count=retrieved_count,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    cost_usd=cost_usd,
                     model=self._settings.openai_gen_model or None,
                     embedding_model=self._settings.openai_embed_model,
                     vector_db="chroma",
@@ -150,6 +172,10 @@ class RagService:
                     generate_ms=generate_ms,
                     retrieved_k=payload.top_k,
                     retrieved_count=retrieved_count,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    total_tokens=None,
+                    cost_usd=None,
                     model=self._settings.openai_gen_model or None,
                     embedding_model=self._settings.openai_embed_model,
                     vector_db="chroma",

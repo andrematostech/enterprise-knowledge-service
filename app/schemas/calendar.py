@@ -1,4 +1,6 @@
+from __future__ import annotations
 from datetime import date, datetime, time
+from typing import Optional
 import uuid
 
 from pydantic import BaseModel, Field
@@ -6,9 +8,9 @@ from pydantic import BaseModel, Field
 
 class CalendarEventBase(BaseModel):
     date: date
-    time: time | None = None
+    time: Optional[time] = None
     title: str = Field(min_length=1, max_length=255)
-    note: str | None = None
+    note: Optional[str] = None
 
 
 class CalendarEventCreate(CalendarEventBase):
@@ -16,10 +18,10 @@ class CalendarEventCreate(CalendarEventBase):
 
 
 class CalendarEventUpdate(BaseModel):
-    date: date | None = None
-    time: time | None = None
-    title: str | None = Field(default=None, max_length=255)
-    note: str | None = None
+    date: Optional[date] = None
+    time: Optional[time] = None
+    title: Optional[str] = Field(default=None, max_length=255)
+    note: Optional[str] = None
 
 
 class CalendarEventRead(CalendarEventBase):

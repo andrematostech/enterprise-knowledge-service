@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     app_env: str = "dev"
     api_key: str = "changeme"
+    disable_api_key_in_prod: bool = False
     jwt_secret_key: str = "change-this-secret"
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 60
@@ -18,6 +19,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_embed_model: str = "text-embedding-3-small"
     openai_gen_model: str = ""
+    openai_prompt_cost_per_1k: float | None = None
+    openai_completion_cost_per_1k: float | None = None
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/eks"
     chroma_path: str = "chroma"

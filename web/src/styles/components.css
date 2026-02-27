@@ -316,7 +316,7 @@
 .main_layout {
   grid-area: main;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 490px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   grid-template-rows: auto 1fr;
   column-gap: 0;
   background: var(--surface-1);
@@ -478,6 +478,7 @@
   min-height: 0;
   max-height: calc(100vh - 60px);
   height: calc(100vh - 60px);
+  width: 360px;
 }
 
 .right_rail .panel {
@@ -1821,7 +1822,18 @@
 
 .dashboard_layout {
   display: grid;
+  gap: 16px;
+}
+
+.dashboard_section {
+  display: grid;
   gap: 10px;
+}
+
+.dashboard_section_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .dashboard_metrics {
@@ -1840,6 +1852,34 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+}
+
+.segmented_control {
+  display: inline-flex;
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.segmented_button {
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: var(--fs-0);
+  cursor: pointer;
+}
+
+.segmented_button.is-active {
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+
+.chart_panel {
+  border-radius: var(--r-md);
+  border: 1px solid var(--stroke-1);
+  padding: 10px;
+  background: var(--surface-2);
 }
 
 .drawer_overlay {

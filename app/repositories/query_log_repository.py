@@ -85,6 +85,33 @@ class QueryLogRepository:
             for row in rows
         ]
 
+    def aggregate_cost_by_day(self, knowledge_base_id: UUID, days: int) -> list[dict]:
+        start = datetime.utcnow() - timedelta(days=days)
+        bucket = func.date_trunc("day", QueryLog.created_at).label("bucket")
+        stmt = (
+            select(
+                bucket,
+                func.sum(QueryLog.cost_usd).label("total_cost_usd"),
+                func.avg(QueryLog.cost_usd).label("avg_cost_usd"),
+            )
+            .where(
+                QueryLog.knowledge_base_id == knowledge_base_id,
+                QueryLog.created_at >= start,
+                QueryLog.cost_usd.isnot(None),
+            )
+            .group_by(bucket)
+            .order_by(bucket)
+        )
+        rows = self._db.execute(stmt).all()
+        return [
+            {
+                "date": row.bucket.date().isoformat(),
+                "total_cost_usd": float(row.total_cost_usd) if row.total_cost_usd is not None else 0.0,
+                "avg_cost_usd": float(row.avg_cost_usd) if row.avg_cost_usd is not None else None,
+            }
+            for row in rows
+        ]
+
     def aggregate_workspace_overview(self, user_id: UUID | None, days: int) -> dict:
         kb_stmt = select(KnowledgeBase.id)
         if user_id:

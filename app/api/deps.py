@@ -34,6 +34,8 @@ http_bearer = HTTPBearer(auto_error=False)
 
 def require_api_key(x_api_key: str = Header(default="", alias="X-API-Key")) -> None:
     settings = get_settings()
+    if settings.disable_api_key_in_prod:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key auth disabled")
     if not api_key_matches(x_api_key, settings.api_key):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
@@ -83,6 +85,8 @@ def require_auth(
                         return user
         except JWTError:
             pass
+    if settings.disable_api_key_in_prod:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key auth disabled")
     if api_key_matches(x_api_key, settings.api_key):
         return None
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

@@ -5,7 +5,13 @@ __pycache__/
 .venv/
 .env
 chroma/
+chroma/*.sqlite3
 storage/
+web/.git/
+web/node_modules/
+node_modules/
+web/dist/
+web/build/
 .pytest_cache/
 .mypy_cache/
 .DS_Store

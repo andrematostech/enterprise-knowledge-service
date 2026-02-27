@@ -8,6 +8,7 @@ from app.models.user import User
 from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.query_log_repository import QueryLogRepository
 from app.schemas.analytics import (
+    CostPoint,
     LatencyPoint,
     QueryVolumePoint,
     RecentIngestRead,
@@ -73,6 +74,26 @@ def latency_trend(
     days = parse_range_days(range)
     points = query_log_repo.aggregate_latency_by_day(knowledge_base_id, days)
     return [LatencyPoint(**point) for point in points]
+
+
+@router.get(
+    "/knowledge-bases/{knowledge_base_id}/analytics/cost",
+    response_model=list[CostPoint],
+)
+def cost_trend(
+    knowledge_base_id: UUID,
+    range: str = Query(default="7d"),
+    bucket: str = Query(default="day"),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(require_auth),
+    query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
+) -> list[CostPoint]:
+    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    if bucket != "day":
+        raise HTTPException(status_code=400, detail="Only day bucket is supported.")
+    days = parse_range_days(range)
+    points = query_log_repo.aggregate_cost_by_day(knowledge_base_id, days)
+    return [CostPoint(**point) for point in points]
 
 
 @router.get(

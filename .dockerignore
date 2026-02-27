@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+chroma/
+chroma/*.sqlite3
+storage/
+node_modules/
+web/node_modules/
+web/build/
+web/dist/
+web/.git/
+*.zip

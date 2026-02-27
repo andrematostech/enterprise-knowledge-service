@@ -10,7 +10,8 @@ import {
   FiLayers,
   FiMessageCircle,
   FiSearch,
-  FiSettings
+  FiSettings,
+  FiUser
 } from "react-icons/fi";
 import AppShell from "./components/AppShell.jsx";
 import Drawer from "./components/Drawer.jsx";
@@ -77,6 +78,13 @@ export default function App() {
   const [avgLatencyMs, setAvgLatencyMs] = useState(() => getStorageNumber("avgLatencyMs", 0));
   const [queryCount, setQueryCount] = useState(() => getStorageNumber("queryCount", 0));
   const [lastIngestAt, setLastIngestAt] = useState(() => localStorage.getItem("lastIngestAt") || "");
+  const [dashboardRange, setDashboardRange] = useState("7d");
+  const [overview, setOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [queryVolumeData, setQueryVolumeData] = useState([]);
+  const [queryVolumeLoading, setQueryVolumeLoading] = useState(false);
+  const [recentQueriesData, setRecentQueriesData] = useState([]);
+  const [recentIngestsData, setRecentIngestsData] = useState([]);
 
   const [inboxMessages, setInboxMessages] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(false);
@@ -533,6 +541,81 @@ export default function App() {
     }
   };
 
+  const fetchOverview = async () => {
+    if (!baseUrl || !authReady) return;
+    setOverviewLoading(true);
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/workspace/overview?range=${dashboardRange}`,
+        headers: buildHeaders({ apiKey, token })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load overview");
+      setOverview(data);
+    } catch (err) {
+      pushToast("error", err.message || "Failed to load overview");
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
+
+  const fetchQueryVolume = async () => {
+    if (!baseUrl || !authReady || !kbId) {
+      setQueryVolumeData([]);
+      return;
+    }
+    setQueryVolumeLoading(true);
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/knowledge-bases/${kbId}/analytics/query-volume?range=${dashboardRange}&bucket=day`,
+        headers: buildHeaders({ apiKey, token })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load query volume");
+      setQueryVolumeData(Array.isArray(data) ? data : []);
+    } catch (err) {
+      pushToast("error", err.message || "Failed to load query volume");
+    } finally {
+      setQueryVolumeLoading(false);
+    }
+  };
+
+  const fetchRecentQueries = async () => {
+    if (!baseUrl || !authReady || !kbId) {
+      setRecentQueriesData([]);
+      return;
+    }
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-queries?limit=10`,
+        headers: buildHeaders({ apiKey, token })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load recent queries");
+      setRecentQueriesData(Array.isArray(data) ? data : []);
+    } catch (err) {
+      pushToast("error", err.message || "Failed to load recent queries");
+    }
+  };
+
+  const fetchRecentIngests = async () => {
+    if (!baseUrl || !authReady || !kbId) {
+      setRecentIngestsData([]);
+      return;
+    }
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-ingests?limit=10`,
+        headers: buildHeaders({ apiKey, token })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load recent ingests");
+      setRecentIngestsData(Array.isArray(data) ? data : []);
+    } catch (err) {
+      pushToast("error", err.message || "Failed to load recent ingests");
+    }
+  };
+
   const runQuery = async () => {
     setError("");
     setResponse(null);
@@ -563,6 +646,9 @@ export default function App() {
       setLastLatencyMs(latency);
       setAvgLatencyMs(nextAvg);
       pushToast("success", "Answer ready.");
+      fetchRecentQueries();
+      fetchOverview();
+      fetchQueryVolume();
     } catch (err) {
       setError(err.message || "Query failed");
       pushToast("error", err.message || "Query failed");
@@ -668,6 +754,8 @@ export default function App() {
       const nowIso = new Date().toISOString();
       setLastIngestAt(nowIso);
       await fetchDocuments();
+      fetchRecentIngests();
+      fetchOverview();
       pushToast("success", "Ingestion started.");
     } catch (err) {
       setDocsError(err.message || "Ingestion failed");
@@ -706,6 +794,18 @@ export default function App() {
   useEffect(() => {
     if (baseUrl && (apiKey || token) && kbId) fetchDocuments();
   }, [baseUrl, apiKey, token, kbId]);
+
+  useEffect(() => {
+    if (baseUrl && authReady) fetchOverview();
+  }, [baseUrl, apiKey, token, dashboardRange]);
+
+  useEffect(() => {
+    if (baseUrl && authReady && kbId) {
+      fetchQueryVolume();
+      fetchRecentQueries();
+      fetchRecentIngests();
+    }
+  }, [baseUrl, apiKey, token, kbId, dashboardRange]);
 
   useEffect(() => {
     if (token) {
@@ -773,6 +873,11 @@ export default function App() {
       id: "settings",
       label: "Settings",
       items: [{ id: "settings", label: "Settings", icon: <FiSettings /> }]
+    },
+    {
+      id: "account",
+      label: "Account",
+      items: [{ id: "account", label: "Account", icon: <FiUser /> }]
     }
   ];
 
@@ -794,44 +899,44 @@ export default function App() {
   const dashboardMetrics = [
     {
       label: "Docs Indexed",
-      value: documents.length || 0,
-      sub: documents.length ? `${documents.length} total` : "No documents"
+      value: overview?.documents_count ?? documents.length ?? 0,
+      sub: overview?.documents_count ? `${overview.documents_count} total` : "No documents"
     },
     {
       label: "Queries (7d)",
-      value: queryCount || 0,
-      sub: queryCount ? `${queryCount} total` : "No queries"
+      value: overview?.queries_count ?? queryCount ?? 0,
+      sub: overview?.queries_count ? `${overview.queries_count} total` : "No queries"
     },
     {
       label: "Avg Latency",
-      value: avgLatencyMs ? `${avgLatencyMs} ms` : "-",
-      sub: avgLatencyMs ? "Average" : "No data"
+      value: overview?.avg_latency_ms ? `${overview.avg_latency_ms} ms` : "-",
+      sub: overview?.avg_latency_ms ? "Average" : "No data"
     },
     {
       label: "Last Ingest",
-      value: lastIngestAt ? formatDateTime(lastIngestAt) : "-",
-      sub: lastIngestAt ? "Last run" : "Not indexed"
+      value: overview?.last_ingest_at ? formatDateTime(overview.last_ingest_at) : "-",
+      sub: overview?.last_ingest_at ? "Last run" : "Not indexed"
     }
   ];
 
   const retrievalSnapshot = [
     { label: "Top-k", value: topK },
-    { label: "Model", value: response?.model || "Default" },
+    { label: "Embedding model", value: response?.embedding_model || "Default" },
     { label: "Vector DB", value: "Chroma" },
-    { label: "Last indexed", value: lastIngestAt ? formatDateTime(lastIngestAt) : "-" }
+    { label: "Last indexed", value: overview?.last_ingest_at ? formatDateTime(overview.last_ingest_at) : "-" }
   ];
 
-  const recentQueries = response && question
-    ? [
-        {
-          question,
-          latency: lastLatencyMs ? `${lastLatencyMs} ms` : "-",
-          time: formatDateTime(new Date().toISOString())
-        }
-      ]
-    : [];
+  const recentQueries = recentQueriesData.map((item) => ({
+    question: item.query_text?.slice(0, 48) || "-",
+    latency: item.latency_ms ? `${item.latency_ms} ms` : "-",
+    time: item.created_at ? formatDateTime(item.created_at) : "-"
+  }));
 
-  const recentIngests = [];
+  const recentIngests = recentIngestsData.map((item) => ({
+    status: item.status || "-",
+    chunks: item.chunks_created ?? "-",
+    time: item.finished_at ? formatDateTime(item.finished_at) : formatDateTime(item.created_at)
+  }));
 
   const usageMetrics = [
     { label: "Monthly queries", value: queryCount || 0, sub: "Total" },
@@ -854,7 +959,7 @@ export default function App() {
     return term ? list.filter((doc) => doc.name.toLowerCase().includes(term)) : list;
   }, [documents, docSearch]);
 
-  const rightRailProps = activeTab === "dashboard" ? {
+  const rightRailProps = {
     statusRows: [
       { label: "Connection", value: settingsIncomplete ? "Not configured" : "Configured" },
       { label: "Workspace", value: kbList.find((kb) => kb.id === kbId)?.name || "-" },
@@ -876,7 +981,7 @@ export default function App() {
       time: formatDateTime(message.created_at)
     })),
     onAnnouncementsClick: () => setAnnouncementsOpen(true)
-  } : null;
+  };
 
   const weeklyWeather = [
     { day: "Mon", condition: "Sunny", tempC: 22, tempF: 72 },
@@ -912,10 +1017,16 @@ export default function App() {
     dashboard: (
       <Dashboard
         metrics={dashboardMetrics}
-        queryVolume={[]}
+        queryVolume={queryVolumeData}
+        queryRange={dashboardRange}
+        onQueryRangeChange={setDashboardRange}
+        queryVolumeEmpty={!kbId}
+        queryVolumeLoading={queryVolumeLoading || overviewLoading}
         retrievalSnapshot={retrievalSnapshot}
         recentQueries={recentQueries}
         recentIngests={recentIngests}
+        recentQueriesEmpty={!kbId}
+        recentIngestsEmpty={!kbId}
       />
     ),
     documents: (

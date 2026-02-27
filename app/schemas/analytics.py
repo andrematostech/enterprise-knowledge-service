@@ -15,6 +15,12 @@ class LatencyPoint(BaseModel):
     p95_latency_ms: int | None
 
 
+class CostPoint(BaseModel):
+    date: str
+    total_cost_usd: float
+    avg_cost_usd: float | None
+
+
 class RecentQueryRead(BaseModel):
     created_at: datetime
     query_text: str | None

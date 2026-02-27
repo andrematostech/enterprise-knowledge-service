@@ -17,7 +17,7 @@ class OpenAIService:
         response = self._client.embeddings.create(model=self._embed_model, input=texts)
         return [item.embedding for item in response.data]
 
-    def generate_answer(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_answer(self, system_prompt: str, user_prompt: str) -> tuple[str, dict | None]:
         if not self._gen_model:
             raise ValueError("OPENAI_GEN_MODEL is not set")
         response = self._client.chat.completions.create(
@@ -29,4 +29,11 @@ class OpenAIService:
             temperature=0.2,
         )
         content = response.choices[0].message.content or ""
-        return content.strip()
+        usage = None
+        if response.usage:
+            usage = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }
+        return content.strip(), usage

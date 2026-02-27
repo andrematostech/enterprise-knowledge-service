@@ -10,6 +10,7 @@ from app.api.routes.calendar import router as calendar_router
 from app.api.routes.query import router as query_router
 from app.api.routes.messages import router as messages_router
 from app.api.routes.analytics import router as analytics_router
+from app.api.routes.members import router as members_router
 from app.core.config import Settings
 from app.core.logging import configure_logging
 
@@ -61,6 +62,7 @@ def create_app() -> FastAPI:
     app.include_router(messages_router, prefix="/api/v1")
     app.include_router(calendar_router, prefix="/api/v1")
     app.include_router(analytics_router, prefix="/api/v1")
+    app.include_router(members_router, prefix="/api/v1")
 
     return app
 
