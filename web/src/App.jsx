@@ -874,11 +874,7 @@ export default function App() {
       label: "Settings",
       items: [{ id: "settings", label: "Settings", icon: <FiSettings /> }]
     },
-    {
-      id: "account",
-      label: "Account",
-      items: [{ id: "account", label: "Account", icon: <FiUser /> }]
-    }
+    // Account entry is handled by the footer profile button.
   ];
 
   const pageTitleMap = {

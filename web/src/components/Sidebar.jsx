@@ -26,7 +26,6 @@ export default function Sidebar({
       <nav className="sidebar_nav">
         {navGroups.map((group) => (
           <div key={group.id} className="sidebar_group">
-            {!collapsed ? <div className="sidebar_group_label">{group.label}</div> : null}
             <div className="sidebar_group_items">
               {group.items.map((item) => (
                 <button
