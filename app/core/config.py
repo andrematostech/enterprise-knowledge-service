@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     storage_path: str = "storage"
 
     file_size_limit_mb: int = 25
-    allowed_file_types: str = "pdf,txt,md,markdown"
+    allowed_file_types: str = "pdf,txt,md,markdown,docx,csv,xlsx,tex,pptx"
 
     chunk_size: int = 800
     chunk_overlap: int = 100

@@ -1,4 +1,4 @@
-﻿import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiUser } from "react-icons/fi";
 import { cx } from "../lib/classnames.js";
 
 export default function Sidebar({
@@ -60,7 +60,7 @@ export default function Sidebar({
           onClick={() => onSelect("account")}
         >
           <div className="avatar">
-            {account?.avatar ? <img src={account.avatar} alt="Avatar" /> : account?.initials || "?"}
+            {account?.avatar ? <img src={account.avatar} alt="Avatar" /> : account?.initials ? account.initials : <FiUser /> }
           </div>
           {!collapsed ? (
             <div className="meta">

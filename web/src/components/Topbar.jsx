@@ -1,4 +1,4 @@
-﻿import { FiBell, FiMenu } from "react-icons/fi";
+import { FiBell, FiMenu, FiUser } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
@@ -60,7 +60,7 @@ export default function Topbar({
           </button>
         ) : null}
         <button className="avatar avatar_button" type="button" aria-label="User menu">
-          {avatar ? <img src={avatar} alt="Avatar" /> : initials || "?"}
+          {avatar ? <img src={avatar} alt="Avatar" /> : initials ? initials : <FiUser /> }
         </button>
       </div>
     </header>
