@@ -2,11 +2,12 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from datetime import date, timedelta
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, func
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_from_jwt, get_db
 from app.models.calendar_event import CalendarEvent
+from app.models.message import Message
 from app.models.user import User
 from app.schemas.calendar import CalendarEventCreate, CalendarEventRead, CalendarEventUpdate
 
@@ -61,6 +62,52 @@ def create_event(
         participants=payload.participants,
     )
     db.add(event)
+
+    participant_emails = {
+        email.strip().lower()
+        for email in (payload.participants or [])
+        if isinstance(email, str) and email.strip()
+    }
+    if current_user.email:
+        participant_emails.discard(current_user.email.lower())
+    if participant_emails:
+        recipients = (
+            db.execute(select(User).where(func.lower(User.email).in_(participant_emails)))
+            .scalars()
+            .all()
+        )
+        for recipient in recipients:
+            db.add(
+                CalendarEvent(
+                    user_id=recipient.id,
+                    date=payload.date,
+                    time=payload.time,
+                    title=payload.title,
+                    subject=payload.subject,
+                    note=payload.note,
+                    participants=payload.participants,
+                )
+            )
+            body_lines = [
+                f"Event: {payload.title}",
+                f"Date: {payload.date}",
+                f"Time: {payload.time or 'All day'}",
+                f"Subject: {payload.subject or '-'}",
+                f"Organizer: {current_user.full_name or current_user.email}",
+            ]
+            if payload.participants:
+                body_lines.append(f"Participants: {', '.join(payload.participants)}")
+            if payload.note:
+                body_lines.append(f"Notes: {payload.note}")
+            db.add(
+                Message(
+                    sender_user_id=current_user.id,
+                    recipient_user_id=recipient.id,
+                    scope="direct",
+                    subject=f"Calendar invite: {payload.title}",
+                    body="\n".join(body_lines),
+                )
+            )
     db.commit()
     db.refresh(event)
     return CalendarEventRead.model_validate(event, from_attributes=True)

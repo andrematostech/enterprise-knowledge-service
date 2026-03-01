@@ -394,7 +394,7 @@
 .topbar_right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 32px;
   padding-right: 24px;
 }
 
@@ -452,6 +452,17 @@
 
 .workspace_select {
   min-width: 200px;
+}
+
+.topbar_right .workspace_select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar_right .workspace_select .field_label {
+  margin: 0;
+  white-space: nowrap;
 }
 
 .content_scroll {
@@ -727,6 +738,28 @@
 
 .list {
   display: grid; 
+}
+
+.form_error {
+  color: var(--danger);
+  font-size: var(--fs-0);
+}
+
+.search_panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.search_sections {
+  display: grid;
+  gap: 16px;
+}
+
+.search_section {
+  display: grid;
+  gap: 10px;
 }
 
 .conversations_list {
@@ -2024,6 +2057,11 @@
   height: 36px;
 }
 
+.topbar_right .select {
+  height: 36px;
+  padding: 6px 10px;
+}
+
 .topbar_icon_button {
   width: 36px;
   height: 36px;
@@ -2159,7 +2197,7 @@
 
 .utilities_stack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr);
   gap: 10px;
   flex: 1;
   min-height: 0;
@@ -2167,7 +2205,7 @@
 
 .utilities_weather {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 

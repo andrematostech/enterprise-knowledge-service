@@ -51,6 +51,7 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
@@ -350,6 +351,7 @@ export default function App() {
       return;
     }
     setAuthLoading(true);
+    setLoginError("");
     try {
       const { res, data } = await apiRequest({
         baseUrl,
@@ -361,8 +363,10 @@ export default function App() {
       if (!res.ok) throw new Error(extractDetail(data) || "Login failed");
       setToken(data.access_token);
       setLoginPassword("");
+      setLoginError("");
       pushToast("success", "Logged in.");
     } catch (err) {
+      setLoginError(err.message || "Login failed");
       pushToast("error", err.message || "Login failed");
     } finally {
       setAuthLoading(false);
@@ -1683,6 +1687,7 @@ export default function App() {
         setLoginPassword={setLoginPassword}
         showLoginPassword={showLoginPassword}
         onToggleLoginPassword={() => setShowLoginPassword((prev) => !prev)}
+        loginError={loginError}
         registerEmail={registerEmail}
         setRegisterEmail={setRegisterEmail}
         registerPassword={registerPassword}
@@ -1704,8 +1709,12 @@ export default function App() {
         onRefreshUsers={fetchAdminUsers}
         loading={authLoading}
       />
-    )
+    ),
+    search: searchContent
   };
+
+  const activeContent = globalSearchActive ? content.search : content[activeTab];
+  const topbarTitle = globalSearchActive ? "Search" : pageTitleMap[activeTab];
 
   return (
     <>
@@ -1731,7 +1740,7 @@ export default function App() {
           }
         }}
         topbarProps={{
-          title: pageTitleMap[activeTab],
+          title: topbarTitle,
           workspaceLabel: "Workspace",
           workspaceItems,
           workspaceValue: kbId,
@@ -1757,7 +1766,7 @@ export default function App() {
         sidebarOpen={mobileSidebarOpen}
         onCloseSidebar={() => setMobileSidebarOpen(false)}
       >
-        {content[activeTab]}
+        {activeContent}
       </AppShell>
 
       <Drawer title="Utilities" open={utilitiesOpen} onClose={() => setUtilitiesOpen(false)}>

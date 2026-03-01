@@ -34,11 +34,16 @@ KIVO enables:
 Each knowledge base is isolated and can store its own documents, embeddings, and metadata.
 
 ### 📄 Document Ingestion Pipeline
-- Upload PDF, DOC, TXT, or Markdown files
+- Upload PDF, TXT, Markdown, DOCX, CSV, XLSX, PPTX, or TEX files
 - Chunk documents into configurable sizes
 - Generate embeddings
 - Store vectors in Chroma
 - Track ingestion metadata in PostgreSQL
+
+Supported file types:
+- pdf, txt, md, markdown, docx, csv, xlsx, pptx, tex
+
+Legacy `.doc` (Word) files are **not** supported.
 
 ### 🔍 Retrieval-Augmented Generation (RAG)
 When querying:

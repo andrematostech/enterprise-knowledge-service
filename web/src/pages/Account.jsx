@@ -13,6 +13,7 @@ export default function Account({
   setLoginPassword,
   showLoginPassword,
   onToggleLoginPassword,
+  loginError,
   registerEmail,
   setRegisterEmail,
   registerPassword,
@@ -119,6 +120,7 @@ export default function Account({
                 <Button variant="ghost" size="sm" onClick={onToggleLoginPassword}>Show</Button>
               </div>
             </label>
+            {loginError ? <div className="form_error">{loginError}</div> : null}
             <Button variant="primary" onClick={onLogin} disabled={loading}>
               {loading ? "Signing in..." : "Login"}
             </Button>
