@@ -224,6 +224,23 @@ export default function App() {
     return new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), index + 1);
   });
   const eventDates = new Set(calendarEvents.map((event) => event.date));
+
+  const derivedAlertEvents = useMemo(() => {
+    if (!calendarEvents.length) return [];
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return calendarEvents
+      .filter((event) => {
+        if (!event?.date) return false;
+        const date = new Date(`${event.date}T00:00:00`);
+        return date >= start && date <= end;
+      })
+      .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
+  }, [calendarEvents]);
+
+  const visibleAlertEvents = alertsError && derivedAlertEvents.length ? derivedAlertEvents : alertEvents;
   const todayDateKey = new Date().toISOString().slice(0, 10);
   const calendarCells = [
     ...Array.from({ length: monthStartOffset }, () => null),
@@ -1639,25 +1656,26 @@ export default function App() {
             subtitle: currentUser?.position || (token ? "Signed in" : "Guest")
           }
         }}
-        topbarProps={{
-          title: topbarTitle,
-          workspaceLabel: "Workspace",
-          workspaceItems,
-          workspaceValue: kbId,
+          topbarProps={{
+            title: topbarTitle,
+            workspaceLabel: "Workspace",
+            workspaceItems,
+            workspaceValue: kbId,
           onWorkspaceChange: (value) => {
             setKbId(value);
             localStorage.setItem("kbSelectedByUser", "true");
           },
-          searchValue: globalSearch,
-          onSearchChange: setGlobalSearch,
-          onAlerts: () => {
-            setAlertsOpen(true);
-            fetchCalendarAlerts();
-          },
-          avatar: currentUser?.avatar_url || "",
-          initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
-          onMobileMenu: () => setMobileSidebarOpen(true),
-          themeMode,
+            searchValue: globalSearch,
+            onSearchChange: setGlobalSearch,
+            onAlerts: () => {
+              setAlertsOpen(true);
+              fetchCalendarAlerts();
+            },
+            alertsActive: visibleAlertEvents.length > 0,
+            avatar: currentUser?.avatar_url || "",
+            initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
+            onMobileMenu: () => setMobileSidebarOpen(true),
+            themeMode,
           onToggleTheme: () => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))
         }}
         rightRailProps={rightRailProps}
@@ -1912,11 +1930,11 @@ export default function App() {
             <div className="modal_body">
               {alertsLoading ? (
                 <EmptyState title="Loading alerts" subtitle="Fetching upcoming events." />
-              ) : alertsError ? (
+              ) : alertsError && !derivedAlertEvents.length ? (
                 <EmptyState title="Alerts unavailable" subtitle={alertsError} />
-              ) : alertEvents.length ? (
+              ) : visibleAlertEvents.length ? (
                 <div className="list">
-                  {alertEvents.map((event) => (
+                  {visibleAlertEvents.map((event) => (
                     <div key={event.id} className="list_row">
                       <div>
                         <strong>{event.title}</strong>

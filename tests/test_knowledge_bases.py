@@ -18,12 +18,12 @@ class FakeKnowledgeBaseService:
     def __init__(self) -> None:
         self.items: dict[UUID, FakeKnowledgeBase] = {}
 
-    def create(self, payload: KnowledgeBaseCreate) -> FakeKnowledgeBase:
+    def create(self, payload: KnowledgeBaseCreate, owner_user_id: UUID | None = None) -> FakeKnowledgeBase:
         kb = FakeKnowledgeBase(uuid4(), payload.name, payload.description, datetime.now(timezone.utc))
         self.items[kb.id] = kb
         return kb
 
-    def list(self):
+    def list(self, user_id: UUID | None = None):
         return list(self.items.values())
 
     def get(self, knowledge_base_id: UUID):

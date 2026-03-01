@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_settings, require_auth
+from app.api.deps import get_db, get_settings, require_auth, require_kb_access
 from app.models.knowledge_base import KnowledgeBase
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.repositories.query_log_repository import QueryLogRepository
@@ -38,9 +38,7 @@ def query_knowledge_base(
     current_user: User | None = Depends(require_auth),
     service: RagService = Depends(get_service),
 ) -> QueryResponse:
-    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
-    if knowledge_base is None:
-        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    require_kb_access(knowledge_base_id, db, current_user, "viewer")
 
     try:
         user_id = current_user.id if current_user else None

@@ -77,7 +77,14 @@ export default function Usage({
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
-                      <YAxis tickLine={false} axisLine={false} width={40} />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        width={52}
+                        domain={[0, 12000]}
+                        ticks={[0, 3000, 6000, 9000, 12000]}
+                        tickMargin={6}
+                      />
                       <Tooltip
                         contentStyle={{ background: "var(--surface-3)", border: "1px solid var(--stroke-1)" }}
                         labelStyle={{ color: "var(--text-2)" }}
@@ -120,7 +127,14 @@ export default function Usage({
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
-                      <YAxis tickLine={false} axisLine={false} width={40} />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        width={52}
+                        domain={[0, 12000]}
+                        ticks={[0, 3000, 6000, 9000, 12000]}
+                        tickMargin={6}
+                      />
                       <Tooltip
                         contentStyle={{ background: "var(--surface-3)", border: "1px solid var(--stroke-1)" }}
                         labelStyle={{ color: "var(--text-2)" }}

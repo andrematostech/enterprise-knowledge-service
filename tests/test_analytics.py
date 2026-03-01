@@ -57,10 +57,15 @@ class FakeIngestRunRepo:
         ]
 
 
+class FakeDb:
+    def get(self, model, identity):
+        return object()
+
+
 def test_query_volume(client, monkeypatch):
     kb_id = uuid4()
     client.app.dependency_overrides[analytics_route.get_query_log_repo] = lambda: FakeQueryLogRepo()
-    client.app.dependency_overrides[analytics_route.get_db] = lambda: None
+    client.app.dependency_overrides[analytics_route.get_db] = lambda: FakeDb()
     monkeypatch.setattr(analytics_route, "require_kb_access", lambda *args, **kwargs: None)
     response = client.get(
         f"/api/v1/knowledge-bases/{kb_id}/analytics/query-volume?range=7d&bucket=day",
@@ -74,7 +79,7 @@ def test_query_volume(client, monkeypatch):
 def test_latency_trend(client, monkeypatch):
     kb_id = uuid4()
     client.app.dependency_overrides[analytics_route.get_query_log_repo] = lambda: FakeQueryLogRepo()
-    client.app.dependency_overrides[analytics_route.get_db] = lambda: None
+    client.app.dependency_overrides[analytics_route.get_db] = lambda: FakeDb()
     monkeypatch.setattr(analytics_route, "require_kb_access", lambda *args, **kwargs: None)
     response = client.get(
         f"/api/v1/knowledge-bases/{kb_id}/analytics/latency?range=7d&bucket=day",
@@ -88,7 +93,7 @@ def test_latency_trend(client, monkeypatch):
 def test_recent_queries(client, monkeypatch):
     kb_id = uuid4()
     client.app.dependency_overrides[analytics_route.get_query_log_repo] = lambda: FakeQueryLogRepo()
-    client.app.dependency_overrides[analytics_route.get_db] = lambda: None
+    client.app.dependency_overrides[analytics_route.get_db] = lambda: FakeDb()
     monkeypatch.setattr(analytics_route, "require_kb_access", lambda *args, **kwargs: None)
     response = client.get(
         f"/api/v1/knowledge-bases/{kb_id}/analytics/recent-queries?limit=5",
@@ -102,7 +107,7 @@ def test_recent_queries(client, monkeypatch):
 def test_recent_ingests(client, monkeypatch):
     kb_id = uuid4()
     client.app.dependency_overrides[analytics_route.get_ingest_run_repo] = lambda: FakeIngestRunRepo()
-    client.app.dependency_overrides[analytics_route.get_db] = lambda: None
+    client.app.dependency_overrides[analytics_route.get_db] = lambda: FakeDb()
     monkeypatch.setattr(analytics_route, "require_kb_access", lambda *args, **kwargs: None)
     response = client.get(
         f"/api/v1/knowledge-bases/{kb_id}/analytics/recent-ingests?limit=5",

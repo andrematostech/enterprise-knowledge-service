@@ -27,10 +27,15 @@ class FakeRagService:
         )
 
 
+class FakeDb:
+    def get(self, model, identity):
+        return object()
+
+
 def test_query(client, monkeypatch):
     service = FakeRagService()
     client.app.dependency_overrides[get_service] = lambda: service
-    client.app.dependency_overrides[query_route.get_db] = lambda: None
+    client.app.dependency_overrides[query_route.get_db] = lambda: FakeDb()
     monkeypatch.setattr(query_route, "require_kb_access", lambda *args, **kwargs: None)
 
     kb_id = uuid4()
@@ -50,7 +55,7 @@ def test_query(client, monkeypatch):
 def test_query_rbac_blocks(client, monkeypatch):
     service = FakeRagService()
     client.app.dependency_overrides[get_service] = lambda: service
-    client.app.dependency_overrides[query_route.get_db] = lambda: None
+    client.app.dependency_overrides[query_route.get_db] = lambda: FakeDb()
 
     def _deny(*args, **kwargs):
         raise HTTPException(status_code=403, detail="Access denied")

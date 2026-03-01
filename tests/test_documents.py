@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from app.api.routes import documents as documents_route
 from app.api.routes.documents import get_service
 
 
@@ -19,7 +20,7 @@ class FakeDocumentService:
     def __init__(self) -> None:
         self.items: dict[UUID, FakeDocument] = {}
 
-    def upload(self, knowledge_base_id: UUID, upload):
+    def upload(self, knowledge_base_id: UUID, upload, replace_existing: bool = False):
         doc = FakeDocument(
             id=uuid4(),
             knowledge_base_id=knowledge_base_id,
@@ -42,9 +43,10 @@ class FakeDocumentService:
         return True
 
 
-def test_upload_document(client):
+def test_upload_document(client, monkeypatch):
     service = FakeDocumentService()
     client.app.dependency_overrides[get_service] = lambda: service
+    monkeypatch.setattr(documents_route, "require_kb_access", lambda *args, **kwargs: None)
 
     kb_id = uuid4()
     response = client.post(
@@ -58,9 +60,10 @@ def test_upload_document(client):
     assert data["filename"] == "notes.txt"
 
 
-def test_delete_document(client):
+def test_delete_document(client, monkeypatch):
     service = FakeDocumentService()
     client.app.dependency_overrides[get_service] = lambda: service
+    monkeypatch.setattr(documents_route, "require_kb_access", lambda *args, **kwargs: None)
 
     kb_id = uuid4()
     upload = client.post(

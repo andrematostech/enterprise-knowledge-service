@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiSearch } from "react-icons/fi";
 import Panel from "../components/Panel.jsx";
 import Button from "../components/Button.jsx";
 import Input from "../components/Input.jsx";
@@ -114,6 +115,7 @@ export default function Documents({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search documents"
+                  icon={<FiSearch />}
                 />
               </div>
               {error ? <div className="empty_state">{error}</div> : null}

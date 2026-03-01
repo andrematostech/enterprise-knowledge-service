@@ -183,7 +183,6 @@ def test_ingestion_idempotent_and_delete_cleans(tmp_path):
     upload = UploadFile(
         filename="notes.txt",
         file=BytesIO(b"hello world\nhello kivo\n"),
-        content_type="text/plain",
     )
     document = document_service.upload(kb_id, upload)
 

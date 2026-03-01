@@ -1,4 +1,4 @@
-import { FiBell, FiMenu, FiMoon, FiSun, FiUser } from "react-icons/fi";
+import { FiBell, FiMenu, FiMoon, FiSearch, FiSun, FiUser } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
@@ -11,6 +11,7 @@ export default function Topbar({
   searchValue,
   onSearchChange,
   onAlerts,
+  alertsActive,
   avatar,
   initials,
   onMobileMenu,
@@ -38,14 +39,22 @@ export default function Topbar({
           />
         ) : null}
         <div className="topbar_search">
+          <span className="topbar_search_icon" aria-hidden="true">
+            <FiSearch />
+          </span>
           <input
-            className="input"
+            className="input topbar_search_input"
             placeholder="Search"
             value={searchValue}
             onChange={(event) => onSearchChange?.(event.target.value)}
           />
         </div>
-        <button className="topbar_icon_button" type="button" onClick={onAlerts} aria-label="Alerts">
+        <button
+          className={`topbar_icon_button ${alertsActive ? "topbar_icon_button--alert" : ""}`}
+          type="button"
+          onClick={onAlerts}
+          aria-label="Alerts"
+        >
           <FiBell />
         </button>
         {onToggleTheme ? (

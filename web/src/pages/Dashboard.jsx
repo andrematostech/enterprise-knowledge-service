@@ -28,7 +28,7 @@ export default function Dashboard({
   return (
     <div className="dashboard_layout">
       <div className="dashboard_section">
-        <div className="dashboard_section_header">
+        <div className="dashboard_section_header dashboard_section_header--flush">
           <div>
             <div className="panel_title">System pulse</div>
             <div className="panel_subtitle">Workspace overview</div>

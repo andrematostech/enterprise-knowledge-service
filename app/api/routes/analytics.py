@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_auth
+from app.api.deps import get_db, require_auth, require_kb_access
 from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
 from app.repositories.ingest_run_repository import IngestRunRepository

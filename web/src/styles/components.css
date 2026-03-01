@@ -394,7 +394,7 @@
 .topbar_right {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 8px;
   padding-right: 24px;
 }
 
@@ -451,7 +451,7 @@
 }
 
 .workspace_select {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .topbar_right .workspace_select {
@@ -494,7 +494,7 @@
 }
 
 .right_rail .panel {
-  padding: 8px;
+  padding: 10px;
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
   box-shadow: var(--shadow-1), var(--highlight-1);
@@ -651,6 +651,15 @@
   padding: 10px;
   color: var(--text-1);
   user-select: text;
+}
+
+.select {
+  padding-right: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a6a6b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
 }
 
 .textarea { min-height: 120px; }
@@ -1182,14 +1191,18 @@
   border: 1px solid var(--stroke-1);
   border-radius: var(--r-sm);
   overflow: hidden;
+  height: 34px;
 }
 
 .filter_tab {
-  padding: 10px;
+  padding: 0 12px;
   background: transparent;
   border: none;
   color: var(--text-2);
   cursor: pointer;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
 }
 
 .filter_tab.active {
@@ -1308,6 +1321,30 @@
   gap: 8px;
 }
 
+.input_wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input_icon {
+  position: absolute;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.input_icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.input--with-icon {
+  padding-left: 32px;
+}
+
 .settings_layout .panel {
   padding: 24px;
 }
@@ -1324,6 +1361,10 @@
 .settings_layout .grid_two,
 .settings_layout .list {
   gap: 20px;
+}
+
+.settings_layout {
+  gap: 10px;
 }
 
 .settings_layout .field {
@@ -1600,6 +1641,7 @@
 
 .documents_toggle {
   margin-bottom: 12px;
+  height: 34px;
 }
 
 .documents_list {
@@ -1739,7 +1781,7 @@
 }
 
 .query_layout {
-  height: calc(100vh - 60px);
+  height: 100%;
   overflow: visible;
   width: 100%;
   min-width: 0;
@@ -1808,7 +1850,10 @@
 
 .query_shell {
   display: grid;
-  gap: 16px;
+  gap: 10px;
+  height: 100%;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
 }
 
 .query_toggle,
@@ -1819,7 +1864,11 @@
 .usage_toggle,
 .query_toggle,
 .documents_toggle {
-  margin-bottom: 6px;
+  margin-bottom: 0;
+}
+
+.usage_toggle {
+  height: 34px;
 }
 
 .home_layout .panel {
@@ -1835,7 +1884,7 @@
 }
 
 .main_layout .right_rail .panel {
-  padding: 14px;
+  padding: 10px;
 }
 
 .home_panel_body {
@@ -1858,6 +1907,7 @@
 .weekly_forecast_day {
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 6px;
   padding: 14px 10px;
   min-height: 118px;
@@ -1868,8 +1918,8 @@
 }
 
 .weekly_forecast_icon {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
@@ -1879,8 +1929,8 @@
 }
 
 .weekly_forecast_icon svg {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 
 .weekly_forecast_label {
@@ -2103,15 +2153,45 @@
 
 .topbar_search {
   min-width: 220px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topbar_right .workspace_select + .topbar_search {
+  margin-left: 16px;
 }
 
 .topbar_search .input {
   height: 36px;
 }
 
+.topbar_search_input {
+  padding-left: 32px;
+}
+
+.topbar_search_icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+}
+
+.topbar_search_icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .topbar_right .select {
   height: 36px;
   padding: 6px 10px;
+  padding-right: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a6a6b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
 }
 
 .topbar_icon_button {
@@ -2129,6 +2209,24 @@
 .topbar_icon_button:hover {
   border-color: var(--stroke-2);
   color: var(--text-1);
+}
+
+.topbar_icon_button--alert {
+  animation: alertPulse 2.4s ease-in-out infinite;
+  border-color: hsl(217 92% 55% / 0.45);
+  box-shadow: 0 0 0 0 hsl(217 92% 55% / 0.35);
+}
+
+@keyframes alertPulse {
+  0% {
+    box-shadow: 0 0 0 0 hsl(217 92% 55% / 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px hsl(217 92% 55% / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(217 92% 55% / 0);
+  }
 }
 
 .avatar_button {
@@ -2158,6 +2256,10 @@
   align-items: center;
   justify-content: space-between;
   padding-left: 24px;
+}
+
+.dashboard_section_header--flush {
+  padding-left: 0;
 }
 
 .dashboard_metrics {
@@ -2190,15 +2292,19 @@
   border: 1px solid var(--stroke-1);
   border-radius: var(--r-sm);
   overflow: hidden;
+  height: 34px;
 }
 
 .segmented_button {
-  padding: 6px 10px;
+  padding: 0 12px;
   background: transparent;
   border: none;
   color: var(--text-2);
   font-size: var(--fs-0);
   cursor: pointer;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
 }
 
 .segmented_button.is-active {
@@ -2249,7 +2355,7 @@
 
 .utilities_stack {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1.55fr);
   gap: 10px;
   flex: 1;
   min-height: 0;
@@ -2257,30 +2363,34 @@
 
 .utilities_weather {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .utilities_weather_day {
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: var(--r-md);
   border: 1px solid var(--stroke-1);
   background: var(--surface-1);
   display: grid;
   gap: 4px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  min-height: 78px;
 }
 
 .utilities_weather_icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   color: var(--accent-9);
 }
 
 .utilities_weather_icon svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 .utilities_weather_label {
