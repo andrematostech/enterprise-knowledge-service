@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text, Time
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, Time, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -16,7 +16,9 @@ class CalendarEvent(Base):
     date: Mapped[str] = mapped_column(Date, nullable=False, index=True)
     time: Mapped[str | None] = mapped_column(Time, nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    participants: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

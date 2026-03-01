@@ -1,6 +1,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from datetime import date, timedelta
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
@@ -55,7 +56,9 @@ def create_event(
         date=payload.date,
         time=payload.time,
         title=payload.title,
+        subject=payload.subject,
         note=payload.note,
+        participants=payload.participants,
     )
     db.add(event)
     db.commit()
@@ -98,3 +101,26 @@ def delete_event(
     db.delete(event)
     db.commit()
     return {"detail": "Event deleted"}
+
+
+@router.get("/alerts", response_model=list[CalendarEventRead])
+def list_alerts(
+    days: int = Query(default=7, ge=1, le=30),
+    current_user: User = Depends(get_current_user_from_jwt),
+    db: Session = Depends(get_db),
+) -> list[CalendarEventRead]:
+    today = date.today()
+    end = today + timedelta(days=days)
+    stmt = (
+        select(CalendarEvent)
+        .where(
+            and_(
+                CalendarEvent.user_id == current_user.id,
+                CalendarEvent.date >= today,
+                CalendarEvent.date <= end,
+            )
+        )
+        .order_by(CalendarEvent.date.asc(), CalendarEvent.time.asc().nulls_last())
+    )
+    events = db.execute(stmt).scalars().all()
+    return [CalendarEventRead.model_validate(event, from_attributes=True) for event in events]

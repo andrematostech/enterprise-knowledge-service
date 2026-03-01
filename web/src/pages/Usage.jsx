@@ -1,7 +1,30 @@
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import Panel from "../components/Panel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
+import EmptyState from "../components/EmptyState.jsx";
+import { formatDateTime } from "../lib/format.js";
 
-export default function Usage({ metrics }) {
+export default function Usage({ metrics, recentQueriesRaw, recentIngestsRaw }) {
+  const recentQueries = (recentQueriesRaw || []).map((item) => ({
+    question: item.query_text?.slice(0, 48) || "-",
+    latency: item.latency_ms ? `${item.latency_ms} ms` : "-",
+    time: item.created_at ? formatDateTime(item.created_at) : "-"
+  }));
+
+  const latencySeries = (recentQueriesRaw || [])
+    .map((item) => ({
+      time: item.created_at ? formatDateTime(item.created_at) : "-",
+      latency: item.latency_ms ?? 0
+    }))
+    .reverse();
+
+  const ingestSeries = (recentIngestsRaw || [])
+    .map((item) => ({
+      time: item.finished_at ? formatDateTime(item.finished_at) : formatDateTime(item.created_at),
+      chunks: item.chunks_created ?? 0
+    }))
+    .reverse();
+
   return (
     <div className="list usage_layout">
       <Panel title="Usage" subtitle="Client-side metrics" variant="raised">
@@ -13,14 +36,97 @@ export default function Usage({ metrics }) {
           </div>
         </div>
       </Panel>
-      <Panel title="Latency" subtitle="Chart placeholder" variant="sunken">
+      <Panel title="Latency" subtitle="Recent queries" variant="sunken">
         <div className="usage_panel_body">
-          <div className="chart_placeholder">Latency chart placeholder</div>
+          {latencySeries.length ? (
+            <div className="chart_panel">
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={latencySeries}>
+                  <defs>
+                    <linearGradient id="latencyFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--accent-9)" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="var(--accent-9)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} width={40} />
+                  <Tooltip
+                    contentStyle={{ background: "var(--surface-3)", border: "1px solid var(--stroke-1)" }}
+                    labelStyle={{ color: "var(--text-2)" }}
+                    formatter={(value) => [`${value} ms`, "Latency"]}
+                  />
+                  <Area type="monotone" dataKey="latency" stroke="var(--accent-9)" fill="url(#latencyFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState title="No latency data yet" subtitle="Run queries to populate latency telemetry." />
+          )}
+          {recentQueries.length ? (
+            <div className="list">
+              {recentQueries.map((item, index) => (
+                <div key={`${item.question}-${index}`} className="list_row">
+                  <div>
+                    <strong>{item.question}</strong>
+                    <div className="panel_subtitle">{item.time}</div>
+                  </div>
+                  <div className="panel_subtitle">{item.latency}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No recent queries" subtitle="Run a query to see activity." />
+          )}
         </div>
       </Panel>
       <Panel title="Indexing" subtitle="Ingestion history" variant="sunken">
         <div className="usage_panel_body">
-          <div className="chart_placeholder">Ingestion chart placeholder</div>
+          {ingestSeries.length ? (
+            <div className="chart_panel">
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={ingestSeries}>
+                  <defs>
+                    <linearGradient id="ingestFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--accent-7)" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="var(--accent-7)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} width={40} />
+                  <Tooltip
+                    contentStyle={{ background: "var(--surface-3)", border: "1px solid var(--stroke-1)" }}
+                    labelStyle={{ color: "var(--text-2)" }}
+                    formatter={(value) => [`${value} chunks`, "Chunks"]}
+                  />
+                  <Area type="monotone" dataKey="chunks" stroke="var(--accent-7)" fill="url(#ingestFill)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState title="No indexing data yet" subtitle="Run ingestion to populate history." />
+          )}
+          {recentIngestsRaw?.length ? (
+            <table className="table usage_table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Chunks</th>
+                  <th>Finished</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentIngestsRaw.map((run, index) => (
+                  <tr key={`${run.finished_at || run.created_at}-${index}`}>
+                    <td>{run.status || "-"}</td>
+                    <td>{run.chunks_created ?? "-"}</td>
+                    <td>{run.finished_at ? formatDateTime(run.finished_at) : formatDateTime(run.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState title="No ingestion history" subtitle="Ingest documents to see history." />
+          )}
         </div>
       </Panel>
     </div>

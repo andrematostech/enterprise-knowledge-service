@@ -27,6 +27,29 @@ class DocumentRepository:
     def get(self, document_id: UUID) -> Document | None:
         return self._db.get(Document, document_id)
 
+    def get_by_filename(self, knowledge_base_id: UUID, filename: str) -> Document | None:
+        return (
+            self._db.query(Document)
+            .filter(Document.knowledge_base_id == knowledge_base_id, Document.filename == filename)
+            .first()
+        )
+
+    def list_by_filename(self, knowledge_base_id: UUID, filename: str) -> list[Document]:
+        return (
+            self._db.query(Document)
+            .filter(Document.knowledge_base_id == knowledge_base_id, Document.filename == filename)
+            .order_by(Document.created_at.desc())
+            .all()
+        )
+
+    def delete_by_filename(self, knowledge_base_id: UUID, filename: str) -> None:
+        (
+            self._db.query(Document)
+            .filter(Document.knowledge_base_id == knowledge_base_id, Document.filename == filename)
+            .delete(synchronize_session=False)
+        )
+        self._db.commit()
+
     def delete(self, document: Document) -> None:
         self._db.delete(document)
         self._db.commit()

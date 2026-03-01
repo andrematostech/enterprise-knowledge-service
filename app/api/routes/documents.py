@@ -8,6 +8,7 @@ from app.models.user import User
 from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.models.knowledge_base import KnowledgeBase
 from app.schemas.common import Message
 from app.schemas.document import DocumentRead
 from app.services.document_service import DocumentService
@@ -34,13 +35,14 @@ def get_service(db: Session = Depends(get_db)) -> DocumentService:
 def upload_document(
     knowledge_base_id: UUID,
     file: UploadFile,
+    replace_existing: bool = False,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(require_auth),
     service: DocumentService = Depends(get_service),
 ) -> DocumentRead:
     try:
-    require_kb_access(knowledge_base_id, db, current_user, "admin")
-        document = service.upload(knowledge_base_id, file)
+        require_kb_access(knowledge_base_id, db, current_user, "admin")
+        document = service.upload(knowledge_base_id, file, replace_existing=replace_existing)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return DocumentRead.model_validate(document)
@@ -53,7 +55,9 @@ def list_documents(
     current_user: User | None = Depends(require_auth),
     service: DocumentService = Depends(get_service),
 ) -> list[DocumentRead]:
-    require_kb_access(knowledge_base_id, db, current_user, "viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge base not found")
     return [DocumentRead.model_validate(item) for item in service.list(knowledge_base_id)]
 
 

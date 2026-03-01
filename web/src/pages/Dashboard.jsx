@@ -100,7 +100,7 @@ export default function Dashboard({
           )}
         </Panel>
         <Panel title="Retrieval snapshot" subtitle="Runtime configuration" variant="sunken">
-          <div className="list">
+          <div className="list retrieval_snapshot_list">
             {retrievalSnapshot.map((row) => (
               <div key={row.label} className="list_row">
                 <span>{row.label}</span>

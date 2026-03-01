@@ -1,4 +1,5 @@
-﻿import Panel from "../components/Panel.jsx";
+import { useState } from "react";
+import Panel from "../components/Panel.jsx";
 import Button from "../components/Button.jsx";
 import Input from "../components/Input.jsx";
 import EmptyState from "../components/EmptyState.jsx";
@@ -19,6 +20,28 @@ export default function Documents({
   disabled,
   fileInputRef
 }) {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (event) => {
+    if (disabled || uploading) return;
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+    if (disabled || uploading) return;
+    const files = event.dataTransfer.files;
+    if (files && files.length) {
+      onUploadFiles(files);
+    }
+  };
+
   return (
     <div className="documents_layout">
       <Panel
@@ -40,13 +63,24 @@ export default function Documents({
           </div>
         }
       >
-        <div className="documents_panel_body">
+        <div
+          className="documents_panel_body"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragging ? (
+            <div className={`documents_dropzone documents_dropzone--overlay${disabled ? " is-disabled" : ""}`}>
+              <EmptyState title="Drop files to upload" description="Release to add documents." />
+              <div className="documents_dropzone_hint">Drag and drop files anywhere in this panel.</div>
+            </div>
+          ) : null}
           <input
             ref={fileInputRef}
             type="file"
             multiple
             hidden
-            accept=".pdf,.doc,.docx,.txt,.md,.rtf,.csv"
+            accept=".pdf,.txt,.md,.markdown,.docx,.csv,.xlsx,.tex,.pptx"
             onChange={(e) => onUploadFiles(e.target.files)}
           />
           <div className="documents_filters">
@@ -57,7 +91,7 @@ export default function Documents({
           {loading ? (
             <EmptyState title="Loading documents" description="Please wait while we fetch your files." />
           ) : documents.length ? (
-            <div className="list">
+            <div className="list documents_list">
               {documents.map((doc) => (
                 <div key={doc.key} className="list_row">
                   <div>
@@ -73,7 +107,20 @@ export default function Documents({
               ))}
             </div>
           ) : (
-            <EmptyState title="No documents yet" description="Upload files to start building your knowledge base." />
+            <div
+              className={`documents_dropzone${isDragging ? " is-dragging" : ""}${disabled ? " is-disabled" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => {
+                if (!disabled && !uploading) fileInputRef.current?.click();
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <EmptyState title="No documents yet" description="Upload files to start building your knowledge base." />
+              <div className="documents_dropzone_hint">Drag and drop files here or click to browse.</div>
+            </div>
           )}
         </div>
       </Panel>

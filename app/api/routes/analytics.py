@@ -3,7 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_auth, require_kb_access
+from app.api.deps import get_db, require_auth
+from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
 from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.query_log_repository import QueryLogRepository
@@ -48,7 +49,9 @@ def query_volume(
     current_user: User | None = Depends(require_auth),
     query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
 ) -> list[QueryVolumePoint]:
-    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
     if bucket != "day":
         raise HTTPException(status_code=400, detail="Only day bucket is supported.")
     days = parse_range_days(range)
@@ -68,7 +71,9 @@ def latency_trend(
     current_user: User | None = Depends(require_auth),
     query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
 ) -> list[LatencyPoint]:
-    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
     if bucket != "day":
         raise HTTPException(status_code=400, detail="Only day bucket is supported.")
     days = parse_range_days(range)
@@ -88,7 +93,9 @@ def cost_trend(
     current_user: User | None = Depends(require_auth),
     query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
 ) -> list[CostPoint]:
-    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
     if bucket != "day":
         raise HTTPException(status_code=400, detail="Only day bucket is supported.")
     days = parse_range_days(range)
@@ -107,7 +114,9 @@ def recent_queries(
     current_user: User | None = Depends(require_auth),
     query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
 ) -> list[RecentQueryRead]:
-    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
     logs = query_log_repo.list_recent(knowledge_base_id, limit)
     return [
         RecentQueryRead(
@@ -133,7 +142,9 @@ def recent_ingests(
     current_user: User | None = Depends(require_auth),
     ingest_run_repo: IngestRunRepository = Depends(get_ingest_run_repo),
 ) -> list[RecentIngestRead]:
-    require_kb_access(knowledge_base_id, db, current_user, minimum_role="viewer")
+    knowledge_base = db.get(KnowledgeBase, knowledge_base_id)
+    if knowledge_base is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
     runs = ingest_run_repo.list_recent(knowledge_base_id, limit)
     return [
         RecentIngestRead(
@@ -156,5 +167,5 @@ def workspace_overview(
     query_log_repo: QueryLogRepository = Depends(get_query_log_repo),
 ) -> WorkspaceOverviewRead:
     days = parse_range_days(range)
-    overview = query_log_repo.aggregate_workspace_overview(current_user.id if current_user else None, days)
+    overview = query_log_repo.aggregate_workspace_overview(None, days)
     return WorkspaceOverviewRead(**overview)

@@ -126,6 +126,8 @@ def require_kb_access(
 
     if current_user is None:
         return knowledge_base
+    if getattr(current_user, "is_admin", False):
+        return knowledge_base
 
     role = get_kb_role(db, knowledge_base, current_user.id)
     if not role_at_least(role, minimum_role):

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiActivity, FiClock, FiCloud, FiCloudRain, FiDatabase, FiSearch, FiSun } from "react-icons/fi";
 import Panel from "../components/Panel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
@@ -35,8 +36,10 @@ export default function Home({
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
+  const [eventSubject, setEventSubject] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventNote, setEventNote] = useState("");
+  const [eventParticipants, setEventParticipants] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   const monthDate = calendarMonth || new Date();
@@ -77,16 +80,20 @@ export default function Home({
     setSelectedDate(key);
     setEditingId(null);
     setEventTitle("");
+    setEventSubject("");
     setEventTime("");
     setEventNote("");
+    setEventParticipants("");
   };
 
   const handleEditEvent = (event) => {
     setSelectedDate(event.date);
     setEditingId(event.id);
     setEventTitle(event.title || "");
+    setEventSubject(event.subject || "");
     setEventTime(event.time ? String(event.time).slice(0, 5) : "");
     setEventNote(event.note || "");
+    setEventParticipants(event.participants ? event.participants.join(", ") : "");
   };
 
   const handleSubmitEvent = async () => {
@@ -95,23 +102,32 @@ export default function Home({
       date: selectedDate,
       time: eventTime || null,
       title: eventTitle.trim(),
-      note: eventNote.trim() || null
+      subject: eventSubject.trim() || null,
+      note: eventNote.trim() || null,
+      participants: eventParticipants
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean)
     };
     if (editingId) {
       const updated = await onUpdateEvent?.(editingId, payload);
       if (updated) {
         setEditingId(null);
         setEventTitle("");
+        setEventSubject("");
         setEventTime("");
         setEventNote("");
+        setEventParticipants("");
       }
       return;
     }
     const created = await onCreateEvent?.(payload);
     if (created) {
       setEventTitle("");
+      setEventSubject("");
       setEventTime("");
       setEventNote("");
+      setEventParticipants("");
     }
   };
 
@@ -120,8 +136,10 @@ export default function Home({
     if (deleted && eventId === editingId) {
       setEditingId(null);
       setEventTitle("");
+      setEventSubject("");
       setEventTime("");
       setEventNote("");
+      setEventParticipants("");
     }
   };
 
@@ -210,7 +228,7 @@ export default function Home({
                         <div className="calendar_event_tooltip">
                           <div className="calendar_event_title">{dayEvents[0].title}</div>
                           <div className="calendar_event_note">
-                            {dayEvents[0].time ? `${String(dayEvents[0].time).slice(0, 5)} · ` : ""}{dayEvents[0].note || "No note"}
+                            {dayEvents[0].time ? `${String(dayEvents[0].time).slice(0, 5)} · ` : ""}{dayEvents[0].subject ? `${dayEvents[0].subject} · ` : ""}{dayEvents[0].note || "No note"}
                           </div>
                         </div>
                       ) : null}
@@ -231,9 +249,12 @@ export default function Home({
                           <div>
                             <div className="calendar_event_title">{event.title}</div>
                             <div className="panel_subtitle">
-                              {event.time ? String(event.time).slice(0, 5) : "Anytime"} · {event.note || "No note"}
+                              {event.time ? String(event.time).slice(0, 5) : "Anytime"}{event.subject ? ` · ${event.subject}` : ""}{event.note ? ` · ${event.note}` : ""}
                             </div>
                           </div>
+                          {event.participants?.length ? (
+                            <div className="panel_subtitle">{event.participants.join(", ")}</div>
+                          ) : null}
                           <div className="calendar_event_actions">
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event)}>Edit</Button>
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.id)}>Delete</Button>
@@ -252,12 +273,30 @@ export default function Home({
                     />
                   </div>
                   <div className="field">
+                    <label>Subject</label>
+                    <input
+                      className="input"
+                      value={eventSubject}
+                      onChange={(event) => setEventSubject(event.target.value)}
+                      placeholder="Meeting subject"
+                    />
+                  </div>
+                  <div className="field">
                     <label>Time</label>
                     <input
                       className="input"
                       type="time"
                       value={eventTime}
                       onChange={(event) => setEventTime(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Participants (emails)</label>
+                    <input
+                      className="input"
+                      value={eventParticipants}
+                      onChange={(event) => setEventParticipants(event.target.value)}
+                      placeholder="alice@company.com, bob@company.com"
                     />
                   </div>
                   <div className="field">
@@ -278,8 +317,10 @@ export default function Home({
                       onClick={() => {
                         setEditingId(null);
                         setEventTitle("");
+                        setEventSubject("");
                         setEventTime("");
                         setEventNote("");
+                        setEventParticipants("");
                       }}
                     >
                       Clear
@@ -294,3 +335,7 @@ export default function Home({
     </div>
   );
 }
+
+
+
+

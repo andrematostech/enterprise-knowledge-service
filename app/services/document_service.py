@@ -28,7 +28,7 @@ class DocumentService:
         self._vector_store = vector_store
         self._settings = settings
 
-    def upload(self, knowledge_base_id: UUID, upload: UploadFile) -> Document:
+    def upload(self, knowledge_base_id: UUID, upload: UploadFile, replace_existing: bool = False) -> Document:
         knowledge_base = self._knowledge_base_repo.get(knowledge_base_id)
         if not knowledge_base:
             raise ValueError("Knowledge base not found")
@@ -38,6 +38,22 @@ class DocumentService:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext not in allowed:
             raise ValueError("File type not allowed")
+
+        existing = self._document_repo.list_by_filename(knowledge_base_id, filename)
+        if existing:
+            if not replace_existing:
+                raise ValueError("Document with the same filename already exists")
+            for item in existing:
+                chunk_ids = self._chunk_repo.list_ids_by_document(item.id)
+                if chunk_ids:
+                    self._vector_store.delete_embeddings(str(knowledge_base_id), ids=chunk_ids)
+                    self._chunk_repo.delete_by_document(item.id)
+                try:
+                    if os.path.exists(item.storage_path):
+                        os.remove(item.storage_path)
+                except OSError:
+                    pass
+            self._document_repo.delete_by_filename(knowledge_base_id, filename)
 
         max_bytes = self._settings.file_size_limit_mb * 1024 * 1024
         kb_folder = os.path.join(self._settings.storage_path, str(knowledge_base_id))

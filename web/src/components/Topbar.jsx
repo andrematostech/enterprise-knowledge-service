@@ -1,4 +1,4 @@
-import { FiBell, FiMenu, FiUser } from "react-icons/fi";
+import { FiBell, FiMenu, FiMoon, FiSun, FiUser } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
@@ -56,7 +56,9 @@ export default function Topbar({
             aria-label="Toggle theme"
           >
             <span className="theme_pill_track" />
-            <span className="theme_pill_thumb" />
+            <span className="theme_pill_thumb">
+              {themeMode === "light" ? <FiSun /> : <FiMoon />}
+            </span>
           </button>
         ) : null}
         <button className="avatar avatar_button" type="button" aria-label="User menu">

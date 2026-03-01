@@ -11,7 +11,14 @@ import {
   FiMessageCircle,
   FiSearch,
   FiSettings,
-  FiUser
+  FiUser,
+  FiSun,
+  FiCloud,
+  FiCloudRain,
+  FiCloudDrizzle,
+  FiCloudLightning,
+  FiCloudSnow,
+  FiWind
 } from "react-icons/fi";
 import AppShell from "./components/AppShell.jsx";
 import Drawer from "./components/Drawer.jsx";
@@ -74,6 +81,14 @@ export default function App() {
   const [response, setResponse] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState(() => {
+    try {
+      const stored = localStorage.getItem("kivo_conversations");
+      return stored ? JSON.parse(stored) : [];
+    } catch (err) {
+      return [];
+    }
+  });
   const [lastLatencyMs, setLastLatencyMs] = useState(() => getStorageNumber("lastLatencyMs", 0));
   const [avgLatencyMs, setAvgLatencyMs] = useState(() => getStorageNumber("avgLatencyMs", 0));
   const [queryCount, setQueryCount] = useState(() => getStorageNumber("queryCount", 0));
@@ -103,6 +118,21 @@ export default function App() {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarError, setCalendarError] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [calendarDraftDate, setCalendarDraftDate] = useState("");
+  const [calendarDraftTitle, setCalendarDraftTitle] = useState("");
+  const [calendarDraftSubject, setCalendarDraftSubject] = useState("");
+  const [calendarDraftTime, setCalendarDraftTime] = useState("");
+  const [calendarDraftParticipants, setCalendarDraftParticipants] = useState("");
+  const [calendarDraftNote, setCalendarDraftNote] = useState("");
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertsError, setAlertsError] = useState("");
+  const [alertEvents, setAlertEvents] = useState([]);
+  const [weatherForecast, setWeatherForecast] = useState([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState("");
+
+  const [activeConversationId, setActiveConversationId] = useState(null);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -132,16 +162,44 @@ export default function App() {
     localStorage.setItem("apiKey", apiKey || "");
     localStorage.setItem("kivo_token", token || "");
     localStorage.setItem("kbId", kbId || "");
+    localStorage.setItem("kivo_conversations", JSON.stringify(conversations));
     if (lastIngestAt) localStorage.setItem("lastIngestAt", lastIngestAt);
     setStorageNumber("lastLatencyMs", lastLatencyMs);
     setStorageNumber("avgLatencyMs", avgLatencyMs);
     setStorageNumber("queryCount", queryCount);
     localStorage.setItem("themeMode", themeMode);
-  }, [baseUrl, apiKey, token, kbId, lastIngestAt, lastLatencyMs, avgLatencyMs, queryCount, themeMode]);
+  }, [
+    baseUrl,
+    apiKey,
+    token,
+    kbId,
+    conversations,
+    lastIngestAt,
+    lastLatencyMs,
+    avgLatencyMs,
+    queryCount,
+    themeMode
+  ]);
 
   useEffect(() => {
     document.body.classList.toggle("theme-light", themeMode === "light");
   }, [themeMode]);
+
+  useEffect(() => {
+    if (!("geolocation" in navigator)) {
+      setWeatherError("Location not available");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        fetchWeather(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        setWeatherError("Location permission denied");
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
+    );
+  }, []);
 
   const authReady = Boolean(apiKey || token);
   const settingsIncomplete = !baseUrl || !authReady;
@@ -152,6 +210,30 @@ export default function App() {
     const month = String(calendarMonth.getMonth() + 1).padStart(2, "0");
     return `${year}-${month}`;
   }, [calendarMonth]);
+
+  const calendarMonthTitle = calendarMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric"
+  });
+
+  const monthStart = useMemo(() => new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1), [calendarMonth]);
+  const monthEnd = useMemo(
+    () => new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0),
+    [calendarMonth]
+  );
+  const monthStartOffset = (monthStart.getDay() + 6) % 7;
+  const monthDays = Array.from({ length: monthEnd.getDate() }, (_, index) => {
+    return new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), index + 1);
+  });
+  const eventDates = new Set(calendarEvents.map((event) => event.date));
+  const todayDateKey = new Date().toISOString().slice(0, 10);
+  const calendarCells = [
+    ...Array.from({ length: monthStartOffset }, () => null),
+    ...monthDays
+  ];
+  while (calendarCells.length % 7 !== 0) {
+    calendarCells.push(null);
+  }
 
   const fetchMe = async () => {
     if (!token) return;
@@ -426,6 +508,76 @@ export default function App() {
     }
   };
 
+  const openCalendarDraft = (dateKey) => {
+    setCalendarDraftDate(dateKey);
+    setCalendarDraftTitle("");
+    setCalendarDraftSubject("");
+    setCalendarDraftTime("");
+    setCalendarDraftParticipants("");
+    setCalendarDraftNote("");
+  };
+
+  const submitCalendarDraft = async () => {
+    if (!token) {
+      pushToast("error", "Login required to create events.");
+      return;
+    }
+    if (!calendarDraftDate) {
+      pushToast("error", "Select a date to create an event.");
+      return;
+    }
+    if (!calendarDraftTitle.trim()) {
+      pushToast("error", "Title is required.");
+      return;
+    }
+    const normalizedTitle = calendarDraftTitle.trim();
+    const normalizedTime = calendarDraftTime.trim();
+    const normalizedSubject = calendarDraftSubject.trim();
+    const normalizedNote = calendarDraftNote.trim();
+    const participants = calendarDraftParticipants
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const payload = {
+      date: calendarDraftDate,
+      title: normalizedTitle,
+      ...(normalizedTime ? { time: normalizedTime } : {}),
+      ...(normalizedSubject ? { subject: normalizedSubject } : {}),
+      ...(normalizedNote ? { note: normalizedNote } : {}),
+      ...(participants.length ? { participants } : {})
+    };
+    const created = await createCalendarEvent(payload);
+    if (created) {
+      pushToast("success", "Event saved.");
+      setCalendarDraftTitle("");
+      setCalendarDraftSubject("");
+      setCalendarDraftTime("");
+      setCalendarDraftParticipants("");
+      setCalendarDraftNote("");
+    }
+  };
+
+  const fetchCalendarAlerts = async () => {
+    if (!token) return;
+    setAlertsLoading(true);
+    setAlertsError("");
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: "/api/v1/calendar/alerts?days=7",
+        headers: buildHeaders({ token, includeApiKey: false })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to load alerts");
+      setAlertEvents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setAlertsError(err.message || "Failed to load alerts");
+      setAlertEvents([]);
+    } finally {
+      setAlertsLoading(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!token) {
       pushToast("error", "Login required to send messages.");
@@ -588,7 +740,7 @@ export default function App() {
     try {
       const { res, data } = await apiRequest({
         baseUrl,
-        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-queries?limit=10`,
+        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-queries?limit=5`,
         headers: buildHeaders({ apiKey, token })
       });
       if (!res.ok) throw new Error(extractDetail(data) || "Failed to load recent queries");
@@ -606,7 +758,7 @@ export default function App() {
     try {
       const { res, data } = await apiRequest({
         baseUrl,
-        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-ingests?limit=10`,
+        path: `/api/v1/knowledge-bases/${kbId}/analytics/recent-ingests?limit=5`,
         headers: buildHeaders({ apiKey, token })
       });
       if (!res.ok) throw new Error(extractDetail(data) || "Failed to load recent ingests");
@@ -642,6 +794,21 @@ export default function App() {
       const latency = Math.round(performance.now() - start);
       const nextCount = queryCount + 1;
       const nextAvg = Math.round((avgLatencyMs * queryCount + latency) / nextCount);
+      const selectedKb = kbList.find((kb) => kb.id === kbId);
+      const sourceCount = Array.isArray(data?.sources) ? data.sources.length : 0;
+      setConversations((prev) => {
+        const entry = {
+          id: crypto.randomUUID(),
+          question: question.trim(),
+          answer: data?.answer || "",
+          createdAt: new Date().toISOString(),
+          kbId,
+          kbName: selectedKb?.name || "",
+          latencyMs: latency,
+          sourceCount
+        };
+        return [entry, ...prev].slice(0, 50);
+      });
       setQueryCount(nextCount);
       setLastLatencyMs(latency);
       setAvgLatencyMs(nextAvg);
@@ -693,17 +860,34 @@ export default function App() {
     setUploading(true);
     setDocsError("");
     try {
+      const existingNames = new Set(
+        documents
+          .map((doc) => (doc.filename || doc.name || "").toLowerCase())
+          .filter(Boolean)
+      );
       for (const file of files) {
+        const normalizedName = String(file.name || "").toLowerCase();
+        const isDuplicate = existingNames.has(normalizedName);
+        if (isDuplicate) {
+          const confirmed = window.confirm(
+            `"${file.name}" already exists. Replace the existing document?`
+          );
+          if (!confirmed) {
+            pushToast("info", `Skipped ${file.name}`);
+            continue;
+          }
+        }
         const formData = new FormData();
         formData.append("file", file);
         const { res, data } = await apiRequest({
           baseUrl,
-          path: `/api/v1/knowledge-bases/${kbId}/documents`,
+          path: `/api/v1/knowledge-bases/${kbId}/documents?replace_existing=${isDuplicate ? "true" : "false"}`,
           method: "POST",
           headers: buildHeaders({ apiKey, token }),
           body: formData
         });
         if (!res.ok) throw new Error(extractDetail(data) || `Failed to upload ${file.name}`);
+        if (normalizedName) existingNames.add(normalizedName);
       }
       await fetchDocuments();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -934,6 +1118,23 @@ export default function App() {
     time: item.finished_at ? formatDateTime(item.finished_at) : formatDateTime(item.created_at)
   }));
 
+  const conversationsView = useMemo(() => {
+    return conversations.map((item) => ({
+      id: item.id,
+      question: item.question || "Untitled question",
+      answer: item.answer || "No answer captured.",
+      createdAt: item.createdAt ? formatDateTime(item.createdAt) : "-",
+      kbName: item.kbName || "Workspace",
+      latency: item.latencyMs ? `${item.latencyMs} ms` : "-",
+      sources: item.sourceCount ? `${item.sourceCount} sources` : "No sources"
+    }));
+  }, [conversations]);
+
+  const activeConversation = useMemo(() => {
+    if (!activeConversationId) return null;
+    return conversations.find((item) => item.id === activeConversationId) || null;
+  }, [activeConversationId, conversations]);
+
   const usageMetrics = [
     { label: "Monthly queries", value: queryCount || 0, sub: "Total" },
     { label: "Average latency", value: avgLatencyMs ? `${avgLatencyMs} ms` : "-", sub: "Mean" },
@@ -941,6 +1142,8 @@ export default function App() {
   ];
 
   const workspaceItems = kbList.map((kb) => ({ value: kb.id, label: kb.name }));
+  const globalSearchTerm = globalSearch.trim().toLowerCase();
+  const globalSearchActive = globalSearchTerm.length > 0;
 
   const documentsView = useMemo(() => {
     const term = docSearch.trim().toLowerCase();
@@ -954,6 +1157,211 @@ export default function App() {
     }));
     return term ? list.filter((doc) => doc.name.toLowerCase().includes(term)) : list;
   }, [documents, docSearch]);
+
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearchTerm) return null;
+    const matches = (value) => value && String(value).toLowerCase().includes(globalSearchTerm);
+
+    const docs = documents
+      .map((doc) => ({
+        id: doc.id || doc.document_id || doc.filename,
+        name: doc.filename || doc.name || "Untitled",
+        status: doc.status,
+        createdAt: doc.created_at
+      }))
+      .filter((doc) => matches(doc.name));
+
+    const conversationMatches = conversations
+      .map((item) => ({
+        id: item.id,
+        question: item.question || "Untitled question",
+        answer: item.answer || "",
+        createdAt: item.createdAt ? formatDateTime(item.createdAt) : "-",
+        kbName: item.kbName || "Workspace"
+      }))
+      .filter((item) => matches(item.question) || matches(item.answer) || matches(item.kbName));
+
+    const inboxMatches = inboxMessages
+      .map((message) => ({
+        id: message.id,
+        subject: message.subject || "Message",
+        body: message.body || "",
+        sender: message.sender_name || message.sender_email || "System",
+        createdAt: message.created_at ? formatDateTime(message.created_at) : "-"
+      }))
+      .filter((message) => matches(message.subject) || matches(message.body) || matches(message.sender));
+
+    const announcementMatches = broadcastMessages
+      .map((message) => ({
+        id: message.id,
+        subject: message.subject || "Announcement",
+        body: message.body || "",
+        sender: message.sender_name || message.sender_email || "System",
+        createdAt: message.created_at ? formatDateTime(message.created_at) : "-"
+      }))
+      .filter((message) => matches(message.subject) || matches(message.body) || matches(message.sender));
+
+    const calendarMatches = calendarEvents
+      .map((event) => ({
+        id: event.id,
+        title: event.title || "Event",
+        subject: event.subject || "",
+        note: event.note || "",
+        date: event.date,
+        time: event.time || ""
+      }))
+      .filter((event) => matches(event.title) || matches(event.subject) || matches(event.note));
+
+    const queryMatches = recentQueriesData
+      .map((query) => ({
+        id: query.id || query.created_at || query.query_text,
+        question: query.query_text || "",
+        latency: query.latency_ms ? `${query.latency_ms} ms` : "-",
+        createdAt: query.created_at ? formatDateTime(query.created_at) : "-"
+      }))
+      .filter((query) => matches(query.question));
+
+    const ingestMatches = recentIngestsData
+      .map((ingest) => ({
+        id: ingest.id || ingest.created_at,
+        status: ingest.status || "-",
+        chunks: ingest.chunks_created ?? "-",
+        finishedAt: ingest.finished_at ? formatDateTime(ingest.finished_at) : formatDateTime(ingest.created_at)
+      }))
+      .filter((ingest) => matches(ingest.status));
+
+    const kbMatches = kbList
+      .map((kb) => ({ id: kb.id, name: kb.name }))
+      .filter((kb) => matches(kb.name));
+
+    return {
+      docs,
+      conversationMatches,
+      inboxMatches,
+      announcementMatches,
+      calendarMatches,
+      queryMatches,
+      ingestMatches,
+      kbMatches
+    };
+  }, [
+    globalSearchTerm,
+    documents,
+    conversations,
+    inboxMessages,
+    broadcastMessages,
+    calendarEvents,
+    recentQueriesData,
+    recentIngestsData,
+    kbList
+  ]);
+
+  const renderSearchSection = (title, items, renderItem) => {
+    if (!items?.length) return null;
+    return (
+      <div className="search_section">
+        <div className="panel_title">{title}</div>
+        <div className="list">
+          {items.map(renderItem)}
+        </div>
+      </div>
+    );
+  };
+
+  const searchResultsCount = globalSearchResults
+    ? Object.values(globalSearchResults).reduce((sum, list) => sum + (list?.length || 0), 0)
+    : 0;
+
+  const searchContent = (
+    <Panel
+      title="Search results"
+      subtitle={globalSearchActive ? `Matches for "${globalSearch.trim()}"` : "Type to search"}
+      variant="sunken"
+      className="search_panel"
+    >
+      {globalSearchActive ? (
+        searchResultsCount ? (
+          <div className="search_sections">
+            {renderSearchSection("Documents", globalSearchResults?.docs, (doc) => (
+              <div key={doc.id} className="list_row">
+                <div>
+                  <strong>{doc.name}</strong>
+                  <div className="panel_subtitle">{doc.status || "Ready"}</div>
+                </div>
+                <div className="panel_subtitle">{doc.createdAt ? formatDateTime(doc.createdAt) : "-"}</div>
+              </div>
+            ))}
+            {renderSearchSection("Conversations", globalSearchResults?.conversationMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.question}</strong>
+                  <div className="panel_subtitle">{item.kbName}</div>
+                </div>
+                <div className="panel_subtitle">{item.createdAt}</div>
+              </div>
+            ))}
+            {renderSearchSection("Inbox", globalSearchResults?.inboxMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.subject}</strong>
+                  <div className="panel_subtitle">{item.sender}</div>
+                </div>
+                <div className="panel_subtitle">{item.createdAt}</div>
+              </div>
+            ))}
+            {renderSearchSection("Announcements", globalSearchResults?.announcementMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.subject}</strong>
+                  <div className="panel_subtitle">{item.sender}</div>
+                </div>
+                <div className="panel_subtitle">{item.createdAt}</div>
+              </div>
+            ))}
+            {renderSearchSection("Calendar events", globalSearchResults?.calendarMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.title}</strong>
+                  <div className="panel_subtitle">{item.subject || "No subject"}</div>
+                </div>
+                <div className="panel_subtitle">
+                  {item.date}
+                  {item.time ? ` · ${item.time}` : ""}
+                </div>
+              </div>
+            ))}
+            {renderSearchSection("Recent queries", globalSearchResults?.queryMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.question}</strong>
+                  <div className="panel_subtitle">{item.latency}</div>
+                </div>
+                <div className="panel_subtitle">{item.createdAt}</div>
+              </div>
+            ))}
+            {renderSearchSection("Recent ingests", globalSearchResults?.ingestMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <div>
+                  <strong>{item.status}</strong>
+                  <div className="panel_subtitle">{item.chunks} chunks</div>
+                </div>
+                <div className="panel_subtitle">{item.finishedAt}</div>
+              </div>
+            ))}
+            {renderSearchSection("Knowledge bases", globalSearchResults?.kbMatches, (item) => (
+              <div key={item.id} className="list_row">
+                <strong>{item.name}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No matches" subtitle="Try a different keyword." />
+        )
+      ) : (
+        <EmptyState title="Start typing to search" subtitle="We’ll scan all sections for matches." />
+      )}
+    </Panel>
+  );
 
   const rightRailProps = {
     statusRows: [
@@ -979,15 +1387,68 @@ export default function App() {
     onAnnouncementsClick: () => setAnnouncementsOpen(true)
   };
 
-  const weeklyWeather = [
-    { day: "Mon", condition: "Sunny", tempC: 22, tempF: 72 },
-    { day: "Tue", condition: "Cloudy", tempC: 19, tempF: 66 },
-    { day: "Wed", condition: "Rain", tempC: 17, tempF: 63 },
-    { day: "Thu", condition: "Cloudy", tempC: 20, tempF: 68 },
-    { day: "Fri", condition: "Sunny", tempC: 24, tempF: 75 },
-    { day: "Sat", condition: "Rain", tempC: 18, tempF: 64 },
-    { day: "Sun", condition: "Sunny", tempC: 23, tempF: 73 }
-  ];
+  const weatherCodeLabel = (code) => {
+    if (code === 0) return "Clear";
+    if (code === 1 || code === 2) return "Mostly clear";
+    if (code === 3) return "Cloudy";
+    if (code === 45 || code === 48) return "Fog";
+    if (code >= 51 && code <= 55) return "Drizzle";
+    if (code >= 56 && code <= 57) return "Freezing drizzle";
+    if (code >= 61 && code <= 65) return "Rain";
+    if (code >= 66 && code <= 67) return "Freezing rain";
+    if (code >= 71 && code <= 77) return "Snow";
+    if (code >= 80 && code <= 82) return "Showers";
+    if (code >= 85 && code <= 86) return "Snow showers";
+    if (code >= 95 && code <= 99) return "Thunderstorm";
+    return "Weather";
+  };
+
+  const weatherIcon = (condition) => {
+    const normalized = String(condition || "").toLowerCase();
+    if (normalized.includes("thunder")) return <FiCloudLightning />;
+    if (normalized.includes("snow")) return <FiCloudSnow />;
+    if (normalized.includes("drizzle")) return <FiCloudDrizzle />;
+    if (normalized.includes("rain") || normalized.includes("shower")) return <FiCloudRain />;
+    if (normalized.includes("fog")) return <FiWind />;
+    if (normalized.includes("cloud")) return <FiCloud />;
+    return <FiSun />;
+  };
+
+  const fetchWeather = async (latitude, longitude) => {
+    setWeatherLoading(true);
+    setWeatherError("");
+    try {
+      const url =
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}` +
+        `&longitude=${longitude}` +
+        `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
+        `&timezone=auto`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to load weather");
+      const data = await response.json();
+      const daily = data?.daily;
+      if (!daily?.time?.length) throw new Error("No forecast data");
+      const nextForecast = daily.time.map((dateStr, index) => {
+        const day = new Date(dateStr);
+        const maxC = Math.round(daily.temperature_2m_max?.[index] ?? 0);
+        const minC = Math.round(daily.temperature_2m_min?.[index] ?? 0);
+        const avgC = Math.round((maxC + minC) / 2);
+        const avgF = Math.round(avgC * 1.8 + 32);
+        return {
+          day: day.toLocaleDateString("en-US", { weekday: "short" }),
+          condition: weatherCodeLabel(daily.weathercode?.[index]),
+          tempC: avgC,
+          tempF: avgF
+        };
+      });
+      setWeatherForecast(nextForecast.slice(0, 7));
+    } catch (err) {
+      setWeatherError(err.message || "Weather unavailable");
+      setWeatherForecast([]);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const upcomingEvents = [...calendarEvents]
@@ -1060,9 +1521,98 @@ export default function App() {
         latency={lastLatencyMs}
       />
     ),
-    conversations: placeholderPanel("Conversations", "Threaded activity"),
-    ingestion: placeholderPanel("Ingestion", "Pipeline runs"),
-    retrieval: placeholderPanel("Retrieval", "Index diagnostics"),
+    conversations: (
+      <Panel
+        title="Conversations"
+        subtitle="Local history stored in this browser"
+        variant="sunken"
+        className="conversations_panel"
+      >
+        {conversationsView.length ? (
+          <div className="list conversations_list">
+            {conversationsView.map((item) => (
+              <button
+                key={item.id}
+                className="list_row conversation_row conversation_button"
+                type="button"
+                onClick={() => setActiveConversationId(item.id)}
+              >
+                <div className="conversation_meta">
+                  <strong>{item.question}</strong>
+                  <span>{item.kbName}</span>
+                  <span>{item.createdAt}</span>
+                </div>
+                <p className="conversation_answer">{item.answer}</p>
+                <div className="conversation_footer">
+                  <span>{item.latency}</span>
+                  <span>{item.sources}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No conversations yet" subtitle="Run a query in Ask to capture it here." />
+        )}
+      </Panel>
+    ),
+    ingestion: (
+      <Panel title="Ingestion" subtitle="Pipeline runs" variant="sunken" className="ingestion_panel">
+        {recentIngests.length ? (
+          <table className="table ingestion_table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Chunks</th>
+                <th>Finished</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentIngests.map((run, index) => (
+                <tr key={`${run.time}-${index}`}>
+                  <td>{run.status}</td>
+                  <td>{run.chunks}</td>
+                  <td>{run.time}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <EmptyState title="No ingests yet" subtitle="Run ingestion to see pipeline history here." />
+        )}
+      </Panel>
+    ),
+    retrieval: (
+      <Panel title="Retrieval" subtitle="Index diagnostics" variant="sunken" className="retrieval_panel">
+        <div className="retrieval_panel_body">
+          <div className="retrieval_summary">
+            {retrievalSnapshot.map((item) => (
+              <div key={item.label} className="retrieval_summary_row">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="retrieval_recent">
+            <div className="panel_title">Recent queries</div>
+            {recentQueries.length ? (
+              <div className="list">
+                {recentQueries.map((item, index) => (
+                  <div key={`${item.question}-${index}`} className="list_row">
+                    <div>
+                      <strong>{item.question}</strong>
+                      <div className="panel_subtitle">{item.time}</div>
+                    </div>
+                    <div className="panel_subtitle">{item.latency}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="No retrieval activity" subtitle="Run a query to populate retrieval metrics." />
+            )}
+          </div>
+        </div>
+      </Panel>
+    ),
     inbox: (
       <Inbox
         token={token}
@@ -1089,7 +1639,13 @@ export default function App() {
         currentUserEmail={currentUser?.email || ""}
       />
     ),
-    usage: <Usage metrics={usageMetrics} />,
+    usage: (
+      <Usage
+        metrics={usageMetrics}
+        recentQueriesRaw={recentQueriesData}
+        recentIngestsRaw={recentIngestsData}
+      />
+    ),
     settings: (
       <Settings
         baseUrl={baseUrl}
@@ -1185,7 +1741,10 @@ export default function App() {
           },
           searchValue: globalSearch,
           onSearchChange: setGlobalSearch,
-          onAlerts: () => pushToast("info", "No alerts yet."),
+          onAlerts: () => {
+            setAlertsOpen(true);
+            fetchCalendarAlerts();
+          },
           avatar: currentUser?.avatar_url || "",
           initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
           onMobileMenu: () => setMobileSidebarOpen(true),
@@ -1204,30 +1763,88 @@ export default function App() {
       <Drawer title="Utilities" open={utilitiesOpen} onClose={() => setUtilitiesOpen(false)}>
         <div className="utilities_stack">
           <Panel title="Weather" subtitle="This week" variant="sunken">
-            <div className="utilities_weather">
-              {weeklyWeather.map((entry) => (
-                <div key={entry.day} className="utilities_weather_day">
-                  <div className="utilities_weather_label">{entry.day}</div>
-                  <div className="utilities_weather_temp">
-                    <span>{entry.tempC}°C</span>
-                    <span>{entry.tempF}°F</span>
+            {weatherLoading ? (
+              <EmptyState title="Loading weather" subtitle="Fetching your local forecast." />
+            ) : weatherError ? (
+              <EmptyState title="Weather unavailable" subtitle={weatherError} />
+            ) : weatherForecast.length ? (
+              <div className="utilities_weather">
+                {weatherForecast.map((entry) => (
+                  <div key={entry.day} className="utilities_weather_day">
+                    <div className="utilities_weather_label">{entry.day}</div>
+                    <div className="utilities_weather_icon">{weatherIcon(entry.condition)}</div>
+                    <div className="utilities_weather_temp">
+                      <span>{entry.tempC}°C</span>
+                      <span>{entry.tempF}°F</span>
+                    </div>
+                    <div className="panel_subtitle">{entry.condition}</div>
                   </div>
-                  <div className="panel_subtitle">{entry.condition}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="No forecast data" subtitle="Try again later." />
+            )}
           </Panel>
           <Panel title="Calendar" subtitle="Upcoming" variant="sunken">
             <div className="utilities_calendar">
-              <div className="utilities_week_strip">
-                {weekDays.map((day) => (
-                  <div key={day.toISOString()} className="utilities_week_day">
-                    <span className="utilities_week_label">
-                      {day.toLocaleDateString("en-US", { weekday: "short" })}
-                    </span>
-                    <span className="utilities_week_date">{day.getDate()}</span>
+              <div className="utilities_calendar_header">
+                <div>
+                  <div className="panel_title">{calendarMonthTitle}</div>
+                  <div className="panel_subtitle">Month view</div>
+                </div>
+                <div className="utilities_calendar_actions">
+                  <button
+                    className="btn btn--ghost btn--sm"
+                    type="button"
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                      )
+                    }
+                  >
+                    Prev
+                  </button>
+                  <button
+                    className="btn btn--ghost btn--sm"
+                    type="button"
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                      )
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div className="utilities_month_grid">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
+                  <div key={label} className="utilities_month_label">
+                    {label}
                   </div>
                 ))}
+                {calendarCells.map((day, index) => {
+                  if (!day) {
+                    return <div key={`empty-${index}`} className="utilities_month_cell is-empty" />;
+                  }
+                  const dateKey = day.toISOString().slice(0, 10);
+                  const isToday = dateKey === todayDateKey;
+                  const hasEvent = eventDates.has(dateKey);
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`utilities_month_cell is-clickable${isToday ? " is-today" : ""}${hasEvent ? " has-event" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openCalendarDraft(dateKey)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") openCalendarDraft(dateKey);
+                      }}
+                    >
+                      <span>{day.getDate()}</span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="utilities_upcoming">
                 {calendarLoading ? (
@@ -1240,7 +1857,13 @@ export default function App() {
                       <div key={event.id} className="list_row">
                         <div>
                           <strong>{event.title}</strong>
-                          <div className="panel_subtitle">{event.note || "No details"}</div>
+                          <div className="panel_subtitle">
+                            {event.subject ? `${event.subject} · ` : ""}
+                            {event.note || "No details"}
+                          </div>
+                          {event.participants?.length ? (
+                            <div className="panel_subtitle">{event.participants.join(", ")}</div>
+                          ) : null}
                         </div>
                         <div className="panel_subtitle">
                           {event.date}{event.time ? ` · ${String(event.time).slice(0, 5)}` : ""}
@@ -1251,6 +1874,81 @@ export default function App() {
                 ) : (
                   <EmptyState title="No events" subtitle="Add reminders in the calendar." />
                 )}
+              </div>
+              <div className="utilities_event_form">
+                <div className="panel_title">New event</div>
+                <div className="panel_subtitle">
+                  {calendarDraftDate ? `Selected: ${calendarDraftDate}` : "Click a day to select a date"}
+                </div>
+                <div className="field">
+                  <label>Title</label>
+                  <input
+                    className="input"
+                    value={calendarDraftTitle}
+                    onChange={(event) => setCalendarDraftTitle(event.target.value)}
+                    placeholder="Event title"
+                  />
+                </div>
+                <div className="field">
+                  <label>Subject</label>
+                  <input
+                    className="input"
+                    value={calendarDraftSubject}
+                    onChange={(event) => setCalendarDraftSubject(event.target.value)}
+                    placeholder="Meeting subject"
+                  />
+                </div>
+                <div className="field">
+                  <label>Time</label>
+                  <input
+                    className="input"
+                    type="time"
+                    value={calendarDraftTime}
+                    onChange={(event) => setCalendarDraftTime(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label>Participants (emails)</label>
+                  <input
+                    className="input"
+                    value={calendarDraftParticipants}
+                    onChange={(event) => setCalendarDraftParticipants(event.target.value)}
+                    placeholder="alice@company.com, bob@company.com"
+                  />
+                </div>
+                <div className="field">
+                  <label>Note</label>
+                  <textarea
+                    className="textarea"
+                    value={calendarDraftNote}
+                    onChange={(event) => setCalendarDraftNote(event.target.value)}
+                    placeholder="Add details"
+                  />
+                </div>
+                <div className="calendar_editor_actions">
+                  <button
+                    className="btn btn--primary"
+                    type="button"
+                    onClick={submitCalendarDraft}
+                    disabled={!calendarDraftDate || !calendarDraftTitle.trim()}
+                  >
+                    Save event
+                  </button>
+                  <button
+                    className="btn btn--secondary"
+                    type="button"
+                    onClick={() => {
+                      setCalendarDraftDate("");
+                      setCalendarDraftTitle("");
+                      setCalendarDraftSubject("");
+                      setCalendarDraftTime("");
+                      setCalendarDraftParticipants("");
+                      setCalendarDraftNote("");
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
             </div>
           </Panel>
@@ -1284,6 +1982,100 @@ export default function App() {
                     <div className="panel_subtitle">{formatDateTime(message.created_at)}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {alertsOpen ? (
+        <div className="modal_overlay" onClick={() => setAlertsOpen(false)} role="presentation">
+          <div className="modal_panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal_header">
+              <div>
+                <div className="panel_title">Upcoming events</div>
+                <div className="panel_subtitle">Next 7 days</div>
+              </div>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setAlertsOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="modal_body">
+              {alertsLoading ? (
+                <EmptyState title="Loading alerts" subtitle="Fetching upcoming events." />
+              ) : alertsError ? (
+                <EmptyState title="Alerts unavailable" subtitle={alertsError} />
+              ) : alertEvents.length ? (
+                <div className="list">
+                  {alertEvents.map((event) => (
+                    <div key={event.id} className="list_row">
+                      <div>
+                        <strong>{event.title}</strong>
+                        <div className="panel_subtitle">
+                          {event.subject ? `${event.subject} · ` : ""}
+                          {event.date}
+                          {event.time ? ` · ${String(event.time).slice(0, 5)}` : ""}
+                        </div>
+                        {event.participants?.length ? (
+                          <div className="panel_subtitle">{event.participants.join(", ")}</div>
+                        ) : null}
+                      </div>
+                      <div className="panel_subtitle">{event.note || "No notes"}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="No upcoming events" subtitle="You have no events in the next 7 days." />
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+
+      {activeConversation ? (
+        <div className="modal_overlay" onClick={() => setActiveConversationId(null)} role="presentation">
+          <div className="modal_panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal_header">
+              <div>
+                <div className="panel_title">{activeConversation.question || "Conversation"}</div>
+                <div className="panel_subtitle">
+                  {(activeConversation.kbName || "Workspace") +
+                    (activeConversation.createdAt ? ` · ${formatDateTime(activeConversation.createdAt)}` : "")}
+                </div>
+              </div>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setActiveConversationId(null)}>
+                Close
+              </button>
+            </div>
+            <div className="modal_body">
+              <div className="list">
+                <div className="list_row">
+                  <div>
+                    <strong>Question</strong>
+                    <div className="panel_subtitle">{activeConversation.question || "-"}</div>
+                  </div>
+                  <div className="panel_subtitle">
+                    {activeConversation.latencyMs ? `${activeConversation.latencyMs} ms` : "-"}
+                  </div>
+                </div>
+                <div className="list_row">
+                  <div>
+                    <strong>Answer</strong>
+                    <div className="panel_subtitle">{activeConversation.answer || "-"}</div>
+                  </div>
+                </div>
+                <div className="list_row">
+                  <div>
+                    <strong>Sources</strong>
+                    <div className="panel_subtitle">
+                      {activeConversation.sourceCount ? `${activeConversation.sourceCount} sources` : "No sources"}
+                    </div>
+                  </div>
+                  <div className="panel_subtitle">
+                    {activeConversation.kbName || "Workspace"}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
