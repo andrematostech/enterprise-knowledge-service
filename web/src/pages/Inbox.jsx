@@ -39,7 +39,7 @@ export default function Inbox({
   return (
     <div className="grid_two inbox_layout inbox_page">
       <Panel
-        title="Inbox"
+        title="Messages"
         subtitle="Direct messages and broadcasts."
         className="inbox_list_panel"
         action={
@@ -60,8 +60,8 @@ export default function Inbox({
           />
           {error ? <div className="empty_state">{error}</div> : null}
           <div className="inbox_list_scroll">
-            {!token ? (
-              <EmptyState title="Login required" description="Sign in to view your inbox." />
+              {!token ? (
+                <EmptyState title="Login required" description="Sign in to view your messages." />
             ) : filtered.length ? (
               <div className="list inbox_cards">
                 {filtered.map((message) => (

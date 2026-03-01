@@ -1,81 +1,136 @@
-# KIVO — Enterprise Knowledge Infrastructure
+﻿# KIVO
 
-KIVO is a multi-tenant knowledge platform that enables teams to build secure, AI-powered search and question-answering systems over private documents.
+KIVO is an enterprise-grade knowledge infrastructure platform for deploying secure, multi-tenant Retrieval-Augmented Generation (RAG) systems over private organizational data.
 
-It allows organizations to upload internal files, index them into vector embeddings, and query them using Retrieval-Augmented Generation (RAG). KIVO provides both a production-ready backend API and a modern web interface for managing knowledge bases.
-
----
-
-## 🧠 What Is KIVO?
-
-KIVO is infrastructure for private AI knowledge systems.
-
-Instead of sending your data to external tools, KIVO lets you:
-
-- Upload internal documents
-- Index them into a vector database
-- Retrieve relevant context
-- Generate grounded AI responses with citations
-
-It is designed for:
-
-- Startups building internal AI tools
-- Enterprises managing structured knowledge
-- Developer teams integrating AI into products
-- Organizations requiring tenant-level isolation
+It provides a production-oriented control plane for document ingestion, vector indexing, retrieval diagnostics, usage analytics, and workspace-level isolation.
 
 ---
 
-## 🚀 What KIVO Does
+## Why KIVO?
 
-KIVO enables:
+Most RAG demos stop at embeddings and prompt engineering. KIVO focuses on the infrastructure required to operate RAG systems reliably.
 
-### 📂 Multi-Tenant Knowledge Bases
-Each knowledge base is isolated and can store its own documents, embeddings, and metadata.
+KIVO focuses on the missing layer:
+- Workspace isolation
+- Idempotent ingestion pipelines
+- Vector lifecycle management
+- Usage and latency analytics
+- Operational visibility
 
-### 📄 Document Ingestion Pipeline
-- Upload PDF, TXT, Markdown, DOCX, CSV, XLSX, PPTX, or TEX files
-- Chunk documents into configurable sizes
-- Generate embeddings
-- Store vectors in Chroma
-- Track ingestion metadata in PostgreSQL
-
-Supported file types:
-- pdf, txt, md, markdown, docx, csv, xlsx, pptx, tex
-
-Legacy `.doc` (Word) files are **not** supported.
-
-### 🔍 Retrieval-Augmented Generation (RAG)
-When querying:
-1. The system retrieves the most relevant chunks
-2. Sends context to the LLM
-3. Generates a grounded response
-4. Returns citations
-
-### 🔐 Secure API Access
-All API requests require an API key header:  
-X-API-Key: <your_key>
-
-
-### 🖥 Web Interface
-A React-based dashboard for:
-- Managing knowledge bases
-- Uploading documents
-- Running ingestion
-- Querying AI
-- Viewing usage metrics
+It is designed as a backend-first system with a control-plane UI — not a chatbot demo.
 
 ---
 
-## 🏗 System Architecture
+## Architecture
 
-```mermaid
-flowchart LR
-  Client[Client] -->|HTTP + X-API-Key| API[FastAPI]
-  API --> Services[Service Layer]
-  Services --> Repos[Repository Layer]
-  Repos --> DB[(PostgreSQL)]
-  Services --> Vector[Chroma Vector Store]
-  Services --> Storage[Local File Storage]
-  Services --> OpenAI[OpenAI API]
-  WebUI[React UI] --> API
+```
+┌──────────────────────────────┐
+│        React Admin UI        │
+│  (Control Plane Dashboard)   │
+└──────────────┬───────────────┘
+               │ REST
+┌──────────────▼───────────────┐
+│        FastAPI Backend       │
+│ - Auth / RBAC                │
+│ - Ingestion Service          │
+│ - Query Service              │
+│ - Analytics Service          │
+└───────┬───────────┬──────────┘
+        │           │
+        │           │
+┌───────▼──────┐ ┌──▼───────────┐
+│ PostgreSQL   │ │ Chroma DB    │
+│ Metadata     │ │ Vector Store │
+└──────────────┘ └──────────────┘
+        │
+        ▼
+   OpenAI API
+```
+
+---
+
+## Supported Document Types
+
+- PDF
+- TXT
+- Markdown
+- DOCX
+- CSV
+- XLSX
+- PPTX
+- TEX
+
+> Note: Legacy `.doc` files are not supported.
+
+---
+
+## Key Features
+
+- Multi-tenant workspace isolation
+- Deterministic chunking & ingestion idempotency
+- Vector store lifecycle management
+- Query logging with latency + token metrics
+- Usage analytics dashboard
+- Role-based access primitives
+- Broadcast & messaging system
+
+---
+
+## Project Status
+
+This project is a portfolio-grade reference implementation of an enterprise RAG control plane.
+It is not a managed SaaS offering.
+
+
+## Quickstart (Docker)
+
+### 1. Configure environment
+
+Create an `.env` file in the project root:
+
+```bash
+OPENAI_API_KEY=your_openai_key_here
+API_KEY=changeme
+```
+
+### 2. Run the stack
+
+```bash
+docker compose up --build
+```
+
+Services typically include:
+
+- `api` – FastAPI backend  
+- `db` – PostgreSQL  
+- `chroma` – Vector store  
+- `web` – React admin UI  
+
+### 3. Access the application
+
+- **UI:** http://localhost:<web-port>  
+- **API:** http://localhost:<api-port>  
+
+(Ports depend on your `docker-compose.yml` configuration.)
+
+---
+
+## Control Plane UI
+
+Key areas:
+
+- **Dashboard** – system pulse, query volume, retrieval snapshot, recent queries & ingests  
+- **Ask AI** – query and history view (`Query | History`)  
+- **Documents** – upload/manage documents and view ingestion runs (`Files | Runs`)  
+- **Messages** – direct messages and broadcasts  
+- **Usage** – metrics and retrieval diagnostics (`Usage | Retrieval`)  
+- **Settings** – connection and workspace management  
+
+## Technology Stack
+
+- Python (FastAPI)
+- PostgreSQL
+- Chroma
+- OpenAI API
+- React
+- Docker Compose

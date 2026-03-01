@@ -2,13 +2,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiBarChart2,
-  FiDatabase,
   FiFileText,
   FiGrid,
   FiHome,
   FiInbox,
-  FiLayers,
-  FiMessageCircle,
   FiSearch,
   FiSettings,
   FiUser,
@@ -1033,24 +1030,17 @@ export default function App() {
     {
       id: "ask",
       label: "Ask",
-      items: [
-        { id: "query", label: "Ask AI", icon: <FiSearch /> },
-        { id: "conversations", label: "Conversations", icon: <FiMessageCircle /> }
-      ]
+      items: [{ id: "query", label: "Ask AI", icon: <FiSearch /> }]
     },
     {
       id: "knowledge",
       label: "Knowledge",
-      items: [
-        { id: "documents", label: "Documents", icon: <FiFileText /> },
-        { id: "ingestion", label: "Ingestion", icon: <FiLayers /> },
-        { id: "retrieval", label: "Retrieval", icon: <FiDatabase /> }
-      ]
+      items: [{ id: "documents", label: "Documents", icon: <FiFileText /> }]
     },
     {
       id: "messages",
       label: "Messages",
-      items: [{ id: "inbox", label: "Inbox", icon: <FiInbox /> }]
+      items: [{ id: "inbox", label: "Messages", icon: <FiInbox /> }]
     },
     {
       id: "insights",
@@ -1069,13 +1059,10 @@ export default function App() {
     dashboard: "Dashboard",
     query: "Ask AI",
     documents: "Documents",
-    inbox: "Inbox",
+    inbox: "Messages",
     usage: "Usage",
     settings: "Settings",
-    account: "Account",
-    conversations: "Conversations",
-    ingestion: "Ingestion",
-    retrieval: "Retrieval"
+    account: "Account"
   };
 
   const broadcastMessages = inboxMessages.filter((message) => message.scope === "broadcast");
@@ -1500,6 +1487,7 @@ export default function App() {
         onIngest={handleIngest}
         uploading={uploading}
         ingesting={ingesting}
+        runs={recentIngests}
         search={docSearch}
         setSearch={setDocSearch}
         lastIngestAt={lastIngestAt ? formatDateTime(lastIngestAt) : "-"}
@@ -1523,99 +1511,9 @@ export default function App() {
           setError("");
         }}
         latency={lastLatencyMs}
+        historyItems={conversationsView}
+        onSelectHistory={setActiveConversationId}
       />
-    ),
-    conversations: (
-      <Panel
-        title="Conversations"
-        subtitle="Local history stored in this browser"
-        variant="sunken"
-        className="conversations_panel"
-      >
-        {conversationsView.length ? (
-          <div className="list conversations_list">
-            {conversationsView.map((item) => (
-              <button
-                key={item.id}
-                className="list_row conversation_row conversation_button"
-                type="button"
-                onClick={() => setActiveConversationId(item.id)}
-              >
-                <div className="conversation_meta">
-                  <strong>{item.question}</strong>
-                  <span>{item.kbName}</span>
-                  <span>{item.createdAt}</span>
-                </div>
-                <p className="conversation_answer">{item.answer}</p>
-                <div className="conversation_footer">
-                  <span>{item.latency}</span>
-                  <span>{item.sources}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="No conversations yet" subtitle="Run a query in Ask to capture it here." />
-        )}
-      </Panel>
-    ),
-    ingestion: (
-      <Panel title="Ingestion" subtitle="Pipeline runs" variant="sunken" className="ingestion_panel">
-        {recentIngests.length ? (
-          <table className="table ingestion_table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Chunks</th>
-                <th>Finished</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentIngests.map((run, index) => (
-                <tr key={`${run.time}-${index}`}>
-                  <td>{run.status}</td>
-                  <td>{run.chunks}</td>
-                  <td>{run.time}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <EmptyState title="No ingests yet" subtitle="Run ingestion to see pipeline history here." />
-        )}
-      </Panel>
-    ),
-    retrieval: (
-      <Panel title="Retrieval" subtitle="Index diagnostics" variant="sunken" className="retrieval_panel">
-        <div className="retrieval_panel_body">
-          <div className="retrieval_summary">
-            {retrievalSnapshot.map((item) => (
-              <div key={item.label} className="retrieval_summary_row">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-              </div>
-            ))}
-          </div>
-          <div className="retrieval_recent">
-            <div className="panel_title">Recent queries</div>
-            {recentQueries.length ? (
-              <div className="list">
-                {recentQueries.map((item, index) => (
-                  <div key={`${item.question}-${index}`} className="list_row">
-                    <div>
-                      <strong>{item.question}</strong>
-                      <div className="panel_subtitle">{item.time}</div>
-                    </div>
-                    <div className="panel_subtitle">{item.latency}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="No retrieval activity" subtitle="Run a query to populate retrieval metrics." />
-            )}
-          </div>
-        </div>
-      </Panel>
     ),
     inbox: (
       <Inbox
@@ -1648,6 +1546,8 @@ export default function App() {
         metrics={usageMetrics}
         recentQueriesRaw={recentQueriesData}
         recentIngestsRaw={recentIngestsData}
+        retrievalSnapshot={retrievalSnapshot}
+        recentQueries={recentQueries}
       />
     ),
     settings: (

@@ -187,7 +187,7 @@
 
 .sidebar_nav {
   display: grid;
-  gap: 10px;
+  gap: 14px;
   margin-top: 40px;
 }
 
@@ -494,9 +494,14 @@
 }
 
 .right_rail .panel {
+  padding: 8px;
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
   box-shadow: var(--shadow-1), var(--highlight-1);
+}
+
+.right_rail .panel_header {
+  margin-bottom: 8px;
 }
 
 .right_rail .panel:last-child {
@@ -658,6 +663,13 @@
   color: var(--text-1);
 }
 
+.badge--muted {
+  font-size: var(--fs-0);
+  padding: 6px 10px;
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
 .badge--icon {
   width: 26px;
   height: 26px;
@@ -725,8 +737,8 @@
 }
 
 .metric_value {
-  font-size: var(--fs-4);
-  font-weight: var(--fw-semibold);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-medium);
 }
 
 .metric_sub {
@@ -912,6 +924,8 @@
   border: none;
   background: transparent;
   padding: 2px 0;
+  font-size: var(--fs-0);
+  color: var(--text-3);
 }
 
 .tips_list {
@@ -989,10 +1003,18 @@
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
   border-radius: var(--r-md);
-  padding: 10px;
+  padding: 8px;
   display: grid;
   gap: 10px;
   font-size: var(--fs-0);
+}
+
+.announcement_tile_body {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text-3);
 }
 
 .inbox_cards {
@@ -1184,6 +1206,12 @@
   font-size: var(--fs-0);
   background: var(--surface-2);
   border: 1px solid var(--stroke-1);
+}
+
+.status_pill--subtle {
+  padding: 6px 10px;
+  font-size: var(--fs-0);
+  color: var(--text-3);
 }
 
 .chart_placeholder {
@@ -1558,6 +1586,8 @@
 
 .documents_actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
@@ -1566,6 +1596,10 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+}
+
+.documents_toggle {
+  margin-bottom: 12px;
 }
 
 .documents_list {
@@ -1648,7 +1682,7 @@
 }
 
 .query_response .list {
-  gap: 16px !important;
+  gap: 12px !important;
 }
 
 .retrieval_snapshot_list {
@@ -1660,7 +1694,7 @@
 }
 
 .query_response strong {
-  margin: 10px 0;
+  margin: 6px 0;
 }
 
 .query_response strong + .list {
@@ -1700,6 +1734,8 @@
 .query_answer_text {
   font-size: var(--fs-1);
   color: var(--text-1);
+  max-width: 560px;
+  line-height: 1.45;
 }
 
 .query_layout {
@@ -1768,6 +1804,22 @@
 
 .query_answer_panel {
   min-height: 0;
+}
+
+.query_shell {
+  display: grid;
+  gap: 16px;
+}
+
+.query_toggle,
+.usage_toggle {
+  align-self: flex-start;
+}
+
+.usage_toggle,
+.query_toggle,
+.documents_toggle {
+  margin-bottom: 6px;
 }
 
 .home_layout .panel {
@@ -2029,7 +2081,7 @@
 /* AppShell enterprise layout additions */
 .sidebar_group {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
 .sidebar_group_label {
@@ -2042,7 +2094,7 @@
 
 .sidebar_group_items {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
 .utilities_button {
