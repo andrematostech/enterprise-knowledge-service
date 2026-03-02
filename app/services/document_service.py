@@ -43,6 +43,7 @@ class DocumentService:
         if existing:
             if not replace_existing:
                 raise ValueError("Document with the same filename already exists")
+            # Replace flow: remove existing chunks/vectors + storage blobs before re-upload.
             for item in existing:
                 chunk_ids = self._chunk_repo.list_ids_by_document(item.id)
                 if chunk_ids:

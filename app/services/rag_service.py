@@ -56,6 +56,7 @@ class RagService:
                 distance = distances[idx] if idx < len(distances) else None
                 score = 0.0
                 if isinstance(distance, (int, float)):
+                    # Convert distance to a "higher is better" score for UI display.
                     score = max(0.0, 1.0 - float(distance))
 
                 chunk_id = metadata.get("chunk_id", "")
@@ -129,6 +130,7 @@ class RagService:
                 and self._settings.openai_prompt_cost_per_1k
                 and self._settings.openai_completion_cost_per_1k
             ):
+                # Cost is derived from token usage when pricing is configured.
                 cost_usd = (
                     (prompt_tokens or 0) * self._settings.openai_prompt_cost_per_1k
                     + (completion_tokens or 0) * self._settings.openai_completion_cost_per_1k

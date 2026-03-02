@@ -70,6 +70,7 @@ def require_auth(
     x_api_key: str = Header(default="", alias="X-API-Key"),
 ) -> User | None:
     settings = get_settings()
+    # Prefer JWT when present; fall back to API key for server-to-server usage.
     if credentials:
         try:
             payload = decode_access_token(credentials.credentials, settings)

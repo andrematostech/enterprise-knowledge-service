@@ -49,6 +49,7 @@ class IngestionService:
             documents = self._document_repo.list_by_knowledge_base(knowledge_base_id)
             for document in documents:
                 content_hash = sha256_file(document.storage_path)
+                # Idempotency guard: skip if file contents match the last ingested hash.
                 if document.content_hash == content_hash and document.last_ingested_at:
                     continue
 
@@ -61,6 +62,7 @@ class IngestionService:
                 chunks: list[Chunk] = []
                 for index, part in enumerate(parts):
                     chunk_text_hash = sha256_text(part)
+                    # Deterministic chunk IDs keep vector IDs stable across re-ingests.
                     chunk_id = uuid.uuid5(
                         uuid.NAMESPACE_URL,
                         f"{knowledge_base_id}:{document.id}:{index}:{chunk_text_hash}",

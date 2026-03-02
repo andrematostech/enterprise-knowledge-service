@@ -240,6 +240,7 @@ export default function App() {
       .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
   }, [calendarEvents]);
 
+  // Fallback to locally loaded events if the alerts endpoint errors or returns empty.
   const visibleAlertEvents = alertsError && derivedAlertEvents.length ? derivedAlertEvents : alertEvents;
   const todayDateKey = new Date().toISOString().slice(0, 10);
   const calendarCells = [
@@ -429,6 +430,7 @@ export default function App() {
     }
   };
 
+  // Load inbox messages for the authenticated user.
   const fetchInbox = async () => {
     if (!token) return;
     setInboxLoading(true);
@@ -449,6 +451,7 @@ export default function App() {
     }
   };
 
+  // Fetch month-scoped calendar events for the active user.
   const fetchCalendarEvents = async () => {
     if (!token) return;
     setCalendarLoading(true);
@@ -468,6 +471,7 @@ export default function App() {
     }
   };
 
+  // Create a new calendar event and keep local list sorted.
   const createCalendarEvent = async (payload) => {
     if (!token) return;
     try {
@@ -489,6 +493,7 @@ export default function App() {
     }
   };
 
+  // Update a single event in place after the API call.
   const updateCalendarEvent = async (eventId, payload) => {
     if (!token) return;
     try {
@@ -508,6 +513,7 @@ export default function App() {
     }
   };
 
+  // Delete an event and remove it from local state.
   const deleteCalendarEvent = async (eventId) => {
     if (!token) return;
     try {
@@ -526,6 +532,7 @@ export default function App() {
     }
   };
 
+  // Reset the draft form for a selected day.
   const openCalendarDraft = (dateKey) => {
     setCalendarDraftDate(dateKey);
     setCalendarDraftTitle("");
@@ -535,6 +542,7 @@ export default function App() {
     setCalendarDraftNote("");
   };
 
+  // Validate + normalize inputs before posting a new event.
   const submitCalendarDraft = async () => {
     if (!token) {
       pushToast("error", "Login required to create events.");
@@ -576,6 +584,7 @@ export default function App() {
     }
   };
 
+  // Load upcoming alerts that drive the bell indicator.
   const fetchCalendarAlerts = async () => {
     if (!token) return;
     setAlertsLoading(true);
@@ -667,6 +676,7 @@ export default function App() {
     }
   };
 
+  // Load knowledge bases tied to the API key.
   const fetchKnowledgeBases = async () => {
     if (!baseUrl || !apiKey) return;
     setKbLoading(true);
@@ -691,6 +701,7 @@ export default function App() {
     }
   };
 
+  // Fetch documents for the currently selected knowledge base.
   const fetchDocuments = async () => {
     if (!baseUrl || !apiKey || !kbId) return;
     setDocsLoading(true);
@@ -711,6 +722,7 @@ export default function App() {
     }
   };
 
+  // Dashboard overview aggregates for the selected range.
   const fetchOverview = async () => {
     if (!baseUrl || !authReady) return;
     setOverviewLoading(true);
@@ -729,6 +741,7 @@ export default function App() {
     }
   };
 
+  // Time-series for query volume chart.
   const fetchQueryVolume = async () => {
     if (!baseUrl || !authReady || !kbId) {
       setQueryVolumeData([]);
@@ -750,6 +763,7 @@ export default function App() {
     }
   };
 
+  // Recent queries list (usage panel).
   const fetchRecentQueries = async () => {
     if (!baseUrl || !authReady || !kbId) {
       setRecentQueriesData([]);
@@ -768,6 +782,7 @@ export default function App() {
     }
   };
 
+  // Recent ingestion runs list.
   const fetchRecentIngests = async () => {
     if (!baseUrl || !authReady || !kbId) {
       setRecentIngestsData([]);
@@ -786,6 +801,7 @@ export default function App() {
     }
   };
 
+  // Query the KB and update local history + metrics.
   const runQuery = async () => {
     setError("");
     setResponse(null);
@@ -842,6 +858,7 @@ export default function App() {
     }
   };
 
+  // Create a new knowledge base and auto-select it.
   const createKnowledgeBase = async () => {
     if (!kbName.trim()) return;
     setKbCreating(true);
@@ -869,6 +886,7 @@ export default function App() {
     }
   };
 
+  // Upload files, optionally replacing existing filenames.
   const handleUpload = async (files) => {
     if (!files || !files.length) return;
     if (!kbId) {
@@ -918,6 +936,7 @@ export default function App() {
     }
   };
 
+  // Delete a document from the current knowledge base.
   const handleDelete = async (docId) => {
     if (!kbId) return;
     const confirmed = window.confirm("Delete this document?");
@@ -941,6 +960,7 @@ export default function App() {
     }
   };
 
+  // Trigger ingestion for the active knowledge base.
   const handleIngest = async () => {
     if (!kbId) return;
     setIngesting(true);
@@ -967,6 +987,7 @@ export default function App() {
     }
   };
 
+  // Simple health check for the backend URL.
   const handleHealthCheck = async () => {
     if (!baseUrl) return;
     setHealthLoading(true);
@@ -980,6 +1001,7 @@ export default function App() {
     }
   };
 
+  // Local preview for avatar uploads in the register form.
   const handleRegisterAvatar = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -989,18 +1011,22 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  // Load KBs when connection/auth changes.
   useEffect(() => {
     if (baseUrl && (apiKey || token)) fetchKnowledgeBases();
   }, [baseUrl, apiKey, token]);
 
+  // Keep document list in sync with selected KB.
   useEffect(() => {
     if (baseUrl && (apiKey || token) && kbId) fetchDocuments();
   }, [baseUrl, apiKey, token, kbId]);
 
+  // Refresh dashboard overview when range changes.
   useEffect(() => {
     if (baseUrl && authReady) fetchOverview();
   }, [baseUrl, apiKey, token, dashboardRange]);
 
+  // Refresh analytics panels together for consistency.
   useEffect(() => {
     if (baseUrl && authReady && kbId) {
       fetchQueryVolume();
@@ -1009,6 +1035,7 @@ export default function App() {
     }
   }, [baseUrl, apiKey, token, kbId, dashboardRange]);
 
+  // Authenticated user bootstrap: profile + inbox.
   useEffect(() => {
     if (token) {
       fetchMe().then(() => {
@@ -1022,6 +1049,7 @@ export default function App() {
     }
   }, [token, baseUrl]);
 
+  // Poll inbox periodically while logged in.
   useEffect(() => {
     if (!token) return;
     const intervalId = setInterval(() => {
@@ -1030,6 +1058,7 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [token, baseUrl]);
 
+  // Calendar events are scoped to month selection.
   useEffect(() => {
     if (token && baseUrl) {
       fetchCalendarEvents();
@@ -1166,6 +1195,7 @@ export default function App() {
     return term ? list.filter((doc) => doc.name.toLowerCase().includes(term)) : list;
   }, [documents, docSearch]);
 
+  // Build cross-section matches for the global search panel.
   const globalSearchResults = useMemo(() => {
     if (!globalSearchTerm) return null;
     const matches = (value) => value && String(value).toLowerCase().includes(globalSearchTerm);
@@ -1395,6 +1425,7 @@ export default function App() {
     onAnnouncementsClick: () => setAnnouncementsOpen(true)
   };
 
+  // Map Open-Meteo weather codes to friendly labels.
   const weatherCodeLabel = (code) => {
     if (code === 0) return "Clear";
     if (code === 1 || code === 2) return "Mostly clear";
@@ -1411,6 +1442,7 @@ export default function App() {
     return "Weather";
   };
 
+  // Pick an icon based on the computed condition label.
   const weatherIcon = (condition) => {
     const normalized = String(condition || "").toLowerCase();
     if (normalized.includes("thunder")) return <FiCloudLightning />;
@@ -1422,6 +1454,7 @@ export default function App() {
     return <FiSun />;
   };
 
+  // Fetch a 7-day forecast from Open-Meteo.
   const fetchWeather = async (latitude, longitude) => {
     setWeatherLoading(true);
     setWeatherError("");
