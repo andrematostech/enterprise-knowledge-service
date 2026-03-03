@@ -114,16 +114,17 @@ export default function App() {
 
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
-  const [calendarError, setCalendarError] = useState("");
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
-  const [calendarDraftDate, setCalendarDraftDate] = useState("");
-  const [calendarDraftTitle, setCalendarDraftTitle] = useState("");
-  const [calendarDraftSubject, setCalendarDraftSubject] = useState("");
-  const [calendarDraftTime, setCalendarDraftTime] = useState("");
-  const [calendarDraftParticipants, setCalendarDraftParticipants] = useState("");
-  const [calendarDraftNote, setCalendarDraftNote] = useState("");
-  const [alertsOpen, setAlertsOpen] = useState(false);
-  const [alertsLoading, setAlertsLoading] = useState(false);
+    const [calendarError, setCalendarError] = useState("");
+    const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+    const [calendarDraftDate, setCalendarDraftDate] = useState("");
+    const [calendarDraftTitle, setCalendarDraftTitle] = useState("");
+    const [calendarDraftSubject, setCalendarDraftSubject] = useState("");
+    const [calendarDraftTime, setCalendarDraftTime] = useState("");
+    const [calendarDraftParticipants, setCalendarDraftParticipants] = useState("");
+    const [calendarDraftNote, setCalendarDraftNote] = useState("");
+    const [calendarPulseDate, setCalendarPulseDate] = useState("");
+    const [alertsOpen, setAlertsOpen] = useState(false);
+    const [alertsLoading, setAlertsLoading] = useState(false);
   const [alertsError, setAlertsError] = useState("");
   const [alertEvents, setAlertEvents] = useState([]);
   const [weatherForecast, setWeatherForecast] = useState([]);
@@ -540,6 +541,7 @@ export default function App() {
     setCalendarDraftTime("");
     setCalendarDraftParticipants("");
     setCalendarDraftNote("");
+    setCalendarPulseDate(dateKey);
   };
 
   // Validate + normalize inputs before posting a new event.
@@ -581,6 +583,7 @@ export default function App() {
       setCalendarDraftTime("");
       setCalendarDraftParticipants("");
       setCalendarDraftNote("");
+      setCalendarPulseDate("");
     }
   };
 
@@ -1720,7 +1723,12 @@ export default function App() {
         {activeContent}
       </AppShell>
 
-      <Drawer title="Utilities" open={utilitiesOpen} onClose={() => setUtilitiesOpen(false)}>
+      <Drawer
+        title="Utilities"
+        open={utilitiesOpen}
+        onClose={() => setUtilitiesOpen(false)}
+        className="drawer_panel--utilities"
+      >
         <div className="utilities_stack">
           <Panel title="Weather" subtitle="This week" variant="sunken">
             {weatherLoading ? (
@@ -1745,145 +1753,123 @@ export default function App() {
               <EmptyState title="No forecast data" subtitle="Try again later." />
             )}
           </Panel>
-          <Panel title="Calendar" subtitle="Upcoming" variant="sunken">
-            <div className="utilities_calendar">
-              <div className="utilities_calendar_header">
-                <div>
-                  <div className="panel_title">{calendarMonthTitle}</div>
-                  <div className="panel_subtitle">Month view</div>
-                </div>
-                <div className="utilities_calendar_actions">
-                  <button
-                    className="btn btn--ghost btn--sm"
-                    type="button"
-                    onClick={() =>
-                      setCalendarMonth(
-                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
-                      )
-                    }
-                  >
-                    Prev
-                  </button>
-                  <button
-                    className="btn btn--ghost btn--sm"
-                    type="button"
-                    onClick={() =>
-                      setCalendarMonth(
-                        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
-                      )
-                    }
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-              <div className="utilities_month_grid">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
-                  <div key={label} className="utilities_month_label">
-                    {label}
+          <div className="utilities_column">
+            <Panel title="Calendar" subtitle="Month view" variant="sunken" className="utilities_panel utilities_panel--calendar">
+              <div className="utilities_calendar">
+                <div className="utilities_calendar_header">
+                  <div>
+                    <div className="panel_title">{calendarMonthTitle}</div>
+                    <div className="panel_subtitle">Month view</div>
                   </div>
-                ))}
-                {calendarCells.map((day, index) => {
-                  if (!day) {
-                    return <div key={`empty-${index}`} className="utilities_month_cell is-empty" />;
-                  }
-                  const dateKey = day.toISOString().slice(0, 10);
-                  const isToday = dateKey === todayDateKey;
-                  const hasEvent = eventDates.has(dateKey);
-                  return (
-                    <div
-                      key={dateKey}
-                      className={`utilities_month_cell is-clickable${isToday ? " is-today" : ""}${hasEvent ? " has-event" : ""}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openCalendarDraft(dateKey)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") openCalendarDraft(dateKey);
-                      }}
+                  <div className="utilities_calendar_actions">
+                    <button
+                      className="btn btn--ghost btn--sm"
+                      type="button"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                        )
+                      }
                     >
-                      <span>{day.getDate()}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="utilities_upcoming">
-                {calendarLoading ? (
-                  <EmptyState title="Loading events" subtitle="Syncing calendar." />
-                ) : calendarError ? (
-                  <EmptyState title="Calendar error" subtitle={calendarError} />
-                ) : upcomingEvents.length ? (
-                  <div className="list">
-                    {upcomingEvents.map((event) => (
-                      <div key={event.id} className="list_row">
-                        <div>
-                          <strong>{event.title}</strong>
-                          <div className="panel_subtitle">
-                            {event.subject ? `${event.subject} · ` : ""}
-                            {event.note || "No details"}
-                          </div>
-                          {event.participants?.length ? (
-                            <div className="panel_subtitle">{event.participants.join(", ")}</div>
-                          ) : null}
-                        </div>
-                        <div className="panel_subtitle">
-                          {event.date}{event.time ? ` · ${String(event.time).slice(0, 5)}` : ""}
-                        </div>
-                      </div>
-                    ))}
+                      Prev
+                    </button>
+                    <button
+                      className="btn btn--ghost btn--sm"
+                      type="button"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                        )
+                      }
+                    >
+                      Next
+                    </button>
                   </div>
-                ) : (
-                  <EmptyState title="No events" subtitle="Add reminders in the calendar." />
-                )}
+                </div>
+                <div className="utilities_month_grid">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
+                    <div key={label} className="utilities_month_label">
+                      {label}
+                    </div>
+                  ))}
+                  {calendarCells.map((day, index) => {
+                    if (!day) {
+                      return <div key={`empty-${index}`} className="utilities_month_cell is-empty" />;
+                    }
+                    const dateKey = day.toISOString().slice(0, 10);
+                    const isToday = dateKey === todayDateKey;
+                    const hasEvent = eventDates.has(dateKey);
+                    const isSelected = dateKey === calendarDraftDate;
+                    const isPulsing = dateKey === calendarPulseDate;
+                    return (
+                      <div
+                        key={dateKey}
+                        className={`utilities_month_cell is-clickable${isToday ? " is-today" : ""}${hasEvent ? " has-event" : ""}${isSelected ? " is-selected" : ""}${isPulsing ? " is-pulse" : ""}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openCalendarDraft(dateKey)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") openCalendarDraft(dateKey);
+                        }}
+                      >
+                        <span>{day.getDate()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+            </Panel>
+            <Panel title="New event" subtitle="Add a reminder" variant="sunken" className="utilities_panel utilities_panel--form">
               <div className="utilities_event_form">
-                <div className="panel_title">New event</div>
-                <div className="panel_subtitle">
-                  {calendarDraftDate ? `Selected: ${calendarDraftDate}` : "Click a day to select a date"}
-                </div>
-                <div className="field">
-                  <label>Title</label>
-                  <input
-                    className="input"
-                    value={calendarDraftTitle}
-                    onChange={(event) => setCalendarDraftTitle(event.target.value)}
-                    placeholder="Event title"
-                  />
-                </div>
-                <div className="field">
-                  <label>Subject</label>
-                  <input
-                    className="input"
-                    value={calendarDraftSubject}
-                    onChange={(event) => setCalendarDraftSubject(event.target.value)}
-                    placeholder="Meeting subject"
-                  />
-                </div>
-                <div className="field">
-                  <label>Time</label>
-                  <input
-                    className="input"
-                    type="time"
-                    value={calendarDraftTime}
-                    onChange={(event) => setCalendarDraftTime(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>Participants (emails)</label>
-                  <input
-                    className="input"
-                    value={calendarDraftParticipants}
-                    onChange={(event) => setCalendarDraftParticipants(event.target.value)}
-                    placeholder="alice@company.com, bob@company.com"
-                  />
-                </div>
-                <div className="field">
-                  <label>Note</label>
-                  <textarea
-                    className="textarea"
-                    value={calendarDraftNote}
-                    onChange={(event) => setCalendarDraftNote(event.target.value)}
-                    placeholder="Add details"
-                  />
+                <div className="utilities_event_fields">
+                  <div className="panel_subtitle">
+                    {calendarDraftDate ? `Selected: ${calendarDraftDate}` : "Click a day to select a date"}
+                  </div>
+                  <div className="field">
+                    <label>Title</label>
+                    <input
+                      className="input"
+                      value={calendarDraftTitle}
+                      onChange={(event) => setCalendarDraftTitle(event.target.value)}
+                      placeholder="Event title"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Subject</label>
+                    <input
+                      className="input"
+                      value={calendarDraftSubject}
+                      onChange={(event) => setCalendarDraftSubject(event.target.value)}
+                      placeholder="Meeting subject"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Time</label>
+                    <input
+                      className="input"
+                      type="time"
+                      value={calendarDraftTime}
+                      onChange={(event) => setCalendarDraftTime(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Participants (emails)</label>
+                    <input
+                      className="input"
+                      value={calendarDraftParticipants}
+                      onChange={(event) => setCalendarDraftParticipants(event.target.value)}
+                      placeholder="alice@company.com, bob@company.com"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Note</label>
+                    <textarea
+                      className="textarea"
+                      value={calendarDraftNote}
+                      onChange={(event) => setCalendarDraftNote(event.target.value)}
+                      placeholder="Add details"
+                    />
+                  </div>
                 </div>
                 <div className="calendar_editor_actions">
                   <button
@@ -1910,6 +1896,37 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </Panel>
+          </div>
+          <Panel title="Events" subtitle="Upcoming" variant="sunken" className="utilities_panel utilities_panel--events">
+            <div className="utilities_upcoming utilities_events">
+              {calendarLoading ? (
+                <EmptyState title="Loading events" subtitle="Syncing calendar." />
+              ) : calendarError ? (
+                <EmptyState title="Calendar error" subtitle={calendarError} />
+              ) : upcomingEvents.length ? (
+                <div className="list">
+                  {upcomingEvents.map((event) => (
+                    <div key={event.id} className="list_row">
+                      <div>
+                        <strong>{event.title}</strong>
+                        <div className="panel_subtitle">
+                          {event.subject ? `${event.subject} · ` : ""}
+                          {event.note || "No details"}
+                        </div>
+                        {event.participants?.length ? (
+                          <div className="panel_subtitle">{event.participants.join(", ")}</div>
+                        ) : null}
+                      </div>
+                      <div className="panel_subtitle">
+                        {event.date}{event.time ? ` · ${String(event.time).slice(0, 5)}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="No events" subtitle="Add reminders in the calendar." />
+              )}
             </div>
           </Panel>
         </div>

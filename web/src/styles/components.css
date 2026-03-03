@@ -653,6 +653,11 @@
   user-select: text;
 }
 
+body:not(.theme-light) .input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.6);
+  opacity: 0.95;
+}
+
 .select {
   padding-right: 36px;
   appearance: none;
@@ -2329,7 +2334,7 @@
 }
 
 .drawer_panel {
-  width: min(900px, 95vw);
+  width: min(1200px, 96vw);
   height: 100%;
   background: var(--surface-2);
   border-left: 1px solid var(--stroke-1);
@@ -2337,8 +2342,12 @@
   flex-direction: column;
 }
 
+.drawer_panel--utilities {
+  background: var(--surface-1);
+}
+
 .drawer_header {
-  padding: 16px;
+  padding: 10px;
   border-bottom: 1px solid var(--stroke-1);
   display: flex;
   align-items: center;
@@ -2346,19 +2355,41 @@
 }
 
 .drawer_body {
-  padding: 16px;
+  padding: 10px;
+  padding-bottom: 20px;
   overflow: auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1;
+  scroll-padding-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.drawer_body::after {
+  content: "";
+  display: block;
+  height: 10px;
+  flex: 0 0 auto;
 }
 
 .utilities_stack {
   display: grid;
-  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 10px;
   flex: 1;
   min-height: 0;
+  height: 100%;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.utilities_column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
 }
 
 .utilities_weather {
@@ -2381,16 +2412,16 @@
 }
 
 .utilities_weather_icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   color: var(--accent-9);
 }
 
 .utilities_weather_icon svg {
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 
 .utilities_weather_label {
@@ -2407,7 +2438,7 @@
 
 .utilities_calendar {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr;
   gap: 12px;
   min-height: 0;
 }
@@ -2478,6 +2509,26 @@
   box-shadow: inset 0 0 0 1px var(--accent-9);
 }
 
+.utilities_month_cell.is-selected {
+  border-color: rgba(101, 145, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(101, 145, 255, 0.9);
+}
+
+.utilities_month_cell.is-pulse {
+  animation: utilities-pulse 2s ease-out infinite;
+}
+
+.utilities_month_cell.is-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 1px solid rgba(101, 145, 255, 0.6);
+  opacity: 0;
+  animation: utilities-pulse-ring 2s ease-out infinite;
+  pointer-events: none;
+}
+
 .utilities_month_cell.has-event::after {
   content: "";
   width: 6px;
@@ -2489,6 +2540,33 @@
   right: 6px;
 }
 
+@keyframes utilities-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(101, 145, 255, 0.8);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(101, 145, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(101, 145, 255, 0);
+  }
+}
+
+@keyframes utilities-pulse-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
 .utilities_upcoming .list {
   gap: 10px;
 }
@@ -2498,10 +2576,80 @@
   overflow: auto;
 }
 
+.utilities_events {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
 .utilities_event_form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding-top: 6px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.utilities_event_fields {
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  padding-bottom: 10px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.utilities_panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.utilities_panel--calendar,
+.utilities_panel--events {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.utilities_panel--calendar .utilities_calendar {
+  flex: 1;
+  min-height: 0;
+}
+
+.utilities_panel--calendar {
+  flex: 0 0 auto;
+}
+
+.utilities_panel--form {
+  flex: 1 1 0;
+  min-height: 0;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.calendar_editor_actions {
+  margin-top: auto;
+  padding-bottom: 10px;
+  position: sticky;
+  bottom: 0;
+  background: var(--surface-2);
+}
+
+
+@media (max-width: 1100px) {
+  .drawer_panel {
+    width: min(980px, 96vw);
+  }
+  .utilities_stack {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1024px) {

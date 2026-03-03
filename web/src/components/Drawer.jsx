@@ -1,9 +1,9 @@
-﻿export default function Drawer({ title, open, onClose, children }) {
+export default function Drawer({ title, open, onClose, children, className = "" }) {
   if (!open) return null;
   return (
     <div className="drawer_overlay" role="presentation" onClick={onClose}>
       <aside
-        className="drawer_panel"
+        className={`drawer_panel ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
