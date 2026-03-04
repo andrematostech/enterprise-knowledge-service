@@ -68,7 +68,7 @@ export default function Usage({
             <div className="usage_panel_body">
               {latencySeries.length ? (
                 <div className="chart_panel">
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={latencySeries}>
                       <defs>
                         <linearGradient id="latencyFill" x1="0" y1="0" x2="0" y2="1">
@@ -118,7 +118,7 @@ export default function Usage({
             <div className="usage_panel_body">
               {ingestSeries.length ? (
                 <div className="chart_panel">
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={ingestSeries}>
                       <defs>
                         <linearGradient id="ingestFill" x1="0" y1="0" x2="0" y2="1">

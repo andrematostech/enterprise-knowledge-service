@@ -28,7 +28,16 @@ export default function Topbar({
             <FiMenu />
           </Button>
         ) : null}
-        {brandLogo ? <img className="topbar_logo" src={brandLogo} alt="Logo" /> : null}
+        {brandLogo ? (
+          <button
+            className="topbar_logo_button"
+            type="button"
+            onClick={onMobileMenu}
+            aria-label="Open menu"
+          >
+            <img className="topbar_logo" src={brandLogo} alt="Logo" />
+          </button>
+        ) : null}
         <div className="page_title">{title}</div>
       </div>
       <div className="topbar_right">

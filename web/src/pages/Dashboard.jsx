@@ -73,7 +73,7 @@ export default function Dashboard({
             <EmptyState title="Select a knowledge base" subtitle="Choose a workspace to view telemetry." />
           ) : queryVolume?.length ? (
             <div className="chart_panel">
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={queryVolume}>
                   <defs>
                     <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">

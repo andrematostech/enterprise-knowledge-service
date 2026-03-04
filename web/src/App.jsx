@@ -1482,6 +1482,7 @@ export default function App() {
         const avgF = Math.round(avgC * 1.8 + 32);
         return {
           day: day.toLocaleDateString("en-US", { weekday: "short" }),
+          dateLabel: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
           condition: weatherCodeLabel(daily.weathercode?.[index]),
           tempC: avgC,
           tempF: avgF
@@ -1743,7 +1744,10 @@ export default function App() {
               <div className="utilities_weather">
                 {weatherForecast.map((entry) => (
                   <div key={entry.day} className="utilities_weather_day">
-                    <div className="utilities_weather_label">{entry.day}</div>
+                    <div className="utilities_weather_label">
+                      <span className="utilities_weather_date">{entry.dateLabel}</span>
+                      <span className="utilities_weather_weekday">{entry.day}</span>
+                    </div>
                     <div className="utilities_weather_icon">{weatherIcon(entry.condition)}</div>
                     <div className="utilities_weather_temp">
                       <span>{entry.tempC}°C</span>
