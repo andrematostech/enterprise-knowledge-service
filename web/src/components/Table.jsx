@@ -12,7 +12,9 @@ export default function Table({ columns = [], rows = [] }) {
         {rows.map((row, index) => (
           <tr key={row.id || index}>
             {columns.map((col) => (
-              <td key={col.key}>{row[col.key]}</td>
+              <td key={col.key} data-label={col.label}>
+                {row[col.key]}
+              </td>
             ))}
           </tr>
         ))}

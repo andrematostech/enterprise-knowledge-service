@@ -1,9 +1,10 @@
-import { FiBell, FiMenu, FiMoon, FiSearch, FiSun, FiUser } from "react-icons/fi";
+import { FiBell, FiMenu, FiMoon, FiSearch, FiSidebar, FiSun, FiUser } from "react-icons/fi";
 import Button from "./Button.jsx";
 import Select from "./Select.jsx";
 
 export default function Topbar({
   title,
+  brandLogo,
   workspaceLabel,
   workspaceItems,
   workspaceValue,
@@ -15,6 +16,7 @@ export default function Topbar({
   avatar,
   initials,
   onMobileMenu,
+  onSystemDrawer,
   themeMode,
   onToggleTheme
 }) {
@@ -26,6 +28,7 @@ export default function Topbar({
             <FiMenu />
           </Button>
         ) : null}
+        {brandLogo ? <img className="topbar_logo" src={brandLogo} alt="Logo" /> : null}
         <div className="page_title">{title}</div>
       </div>
       <div className="topbar_right">
@@ -57,6 +60,16 @@ export default function Topbar({
         >
           <FiBell />
         </button>
+        {onSystemDrawer ? (
+          <button
+            className="topbar_icon_button topbar_system_button"
+            type="button"
+            onClick={onSystemDrawer}
+            aria-label="System"
+          >
+            <FiSidebar />
+          </button>
+        ) : null}
         {onToggleTheme ? (
           <button
             className={`theme_pill ${themeMode === "light" ? "is-light" : "is-dark"}`}

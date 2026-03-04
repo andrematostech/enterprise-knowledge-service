@@ -1,9 +1,9 @@
 import Panel from "./Panel.jsx";
 import Button from "./Button.jsx";
 
-export default function RightRail({ statusRows, tips, announcements, onAnnouncementsClick }) {
+export default function RightRail({ statusRows, tips, announcements, onAnnouncementsClick, className = "" }) {
   return (
-    <aside className="right_rail">
+    <aside className={`right_rail ${className}`.trim()}>
       <Panel title="Status" subtitle="System overview">
         <div className="list">
           {statusRows.map((row) => (

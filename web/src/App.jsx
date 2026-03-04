@@ -21,6 +21,7 @@ import AppShell from "./components/AppShell.jsx";
 import Drawer from "./components/Drawer.jsx";
 import Panel from "./components/Panel.jsx";
 import EmptyState from "./components/EmptyState.jsx";
+import RightRail from "./components/RightRail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Documents from "./pages/Documents.jsx";
 import Query from "./pages/Query.jsx";
@@ -139,6 +140,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem("themeMode") || "dark");
   const [globalSearch, setGlobalSearch] = useState("");
   const [utilitiesOpen, setUtilitiesOpen] = useState(false);
+  const [systemDrawerOpen, setSystemDrawerOpen] = useState(false);
 
   const [toasts, setToasts] = useState([]);
 
@@ -1692,26 +1694,28 @@ export default function App() {
             subtitle: currentUser?.position || (token ? "Signed in" : "Guest")
           }
         }}
-          topbarProps={{
-            title: topbarTitle,
-            workspaceLabel: "Workspace",
-            workspaceItems,
-            workspaceValue: kbId,
+        topbarProps={{
+          title: topbarTitle,
+          brandLogo: logo,
+          workspaceLabel: "Workspace",
+          workspaceItems,
+          workspaceValue: kbId,
           onWorkspaceChange: (value) => {
             setKbId(value);
             localStorage.setItem("kbSelectedByUser", "true");
           },
-            searchValue: globalSearch,
-            onSearchChange: setGlobalSearch,
-            onAlerts: () => {
-              setAlertsOpen(true);
-              fetchCalendarAlerts();
-            },
-            alertsActive: visibleAlertEvents.length > 0,
-            avatar: currentUser?.avatar_url || "",
-            initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
-            onMobileMenu: () => setMobileSidebarOpen(true),
-            themeMode,
+          searchValue: globalSearch,
+          onSearchChange: setGlobalSearch,
+          onAlerts: () => {
+            setAlertsOpen(true);
+            fetchCalendarAlerts();
+          },
+          alertsActive: visibleAlertEvents.length > 0,
+          avatar: currentUser?.avatar_url || "",
+          initials: getInitials(currentUser?.full_name || currentUser?.email || ""),
+          onMobileMenu: () => setMobileSidebarOpen(true),
+          onSystemDrawer: () => setSystemDrawerOpen(true),
+          themeMode,
           onToggleTheme: () => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))
         }}
         rightRailProps={rightRailProps}
@@ -1930,6 +1934,10 @@ export default function App() {
             </div>
           </Panel>
         </div>
+      </Drawer>
+
+      <Drawer title="System" open={systemDrawerOpen} onClose={() => setSystemDrawerOpen(false)}>
+        <RightRail {...rightRailProps} className="right_rail--drawer" />
       </Drawer>
 
       {announcementsOpen ? (
