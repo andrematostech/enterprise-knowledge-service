@@ -14,4 +14,11 @@ def sha256_file(path: str) -> str:
     file_path = Path(path)
     if not file_path.exists():
         raise ValueError("File not found")
-    return sha256_bytes(file_path.read_bytes())
+    hasher = hashlib.sha256()
+    with file_path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()

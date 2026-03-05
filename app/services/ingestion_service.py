@@ -11,7 +11,7 @@ from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.services.openai_service import OpenAIService
 from app.services.vector_store_service import VectorStoreService
-from app.utils.documents import extract_text_from_file
+from app.utils.documents import extract_text_from_file, iter_streamable_chunks
 from app.utils.hashing import sha256_file, sha256_text
 from app.utils.text import chunk_text, normalize_whitespace
 
@@ -35,12 +35,22 @@ class IngestionService:
         self._openai = openai_service
         self._vector_store = vector_store
 
-    def ingest(self, knowledge_base_id: uuid.UUID, user_id: uuid.UUID | None = None) -> IngestRun:
+    def ingest(
+        self,
+        knowledge_base_id: uuid.UUID,
+        user_id: uuid.UUID | None = None,
+        run_id: uuid.UUID | None = None,
+    ) -> IngestRun:
         knowledge_base = self._knowledge_base_repo.get(knowledge_base_id)
         if not knowledge_base:
             raise ValueError("Knowledge base not found")
 
-        run = self._ingest_run_repo.create(knowledge_base_id, user_id)
+        if run_id:
+            run = self._ingest_run_repo.get(run_id)
+            if not run:
+                raise ValueError("Ingest run not found")
+        else:
+            run = self._ingest_run_repo.create(knowledge_base_id, user_id)
         start_time = time.perf_counter()
         documents_processed = 0
         chunks_created = 0
@@ -51,6 +61,74 @@ class IngestionService:
                 content_hash = sha256_file(document.storage_path)
                 # Idempotency guard: skip if file contents match the last ingested hash.
                 if document.content_hash == content_hash and document.last_ingested_at:
+                    continue
+
+                stream = iter_streamable_chunks(
+                    document.storage_path,
+                    document.content_type,
+                    self._settings.chunk_size,
+                )
+                if stream is not None:
+                    existing_ids = self._chunk_repo.list_ids_by_document(document.id)
+                    if existing_ids:
+                        self._vector_store.delete_embeddings(str(knowledge_base_id), ids=existing_ids)
+                        self._chunk_repo.delete_by_document(document.id)
+
+                    batch_chunks: list[Chunk] = []
+                    batch_texts: list[str] = []
+                    index = 0
+                    for part in stream:
+                        normalized = normalize_whitespace(part)
+                        if not normalized:
+                            continue
+                        chunk_text_hash = sha256_text(normalized)
+                        chunk_id = uuid.uuid5(
+                            uuid.NAMESPACE_URL,
+                            f"{knowledge_base_id}:{document.id}:{index}:{chunk_text_hash}",
+                        )
+                        batch_chunks.append(
+                            Chunk(
+                                id=chunk_id,
+                                document_id=document.id,
+                                position=index,
+                                text=normalized,
+                                hash=chunk_text_hash,
+                            )
+                        )
+                        batch_texts.append(normalized)
+                        index += 1
+
+                        if len(batch_chunks) >= 10:
+                            self._chunk_repo.create_many(batch_chunks, commit=False)
+                            embeddings = self._openai.embed_texts(batch_texts)
+                            self._vector_store.add_embeddings(
+                                str(knowledge_base_id),
+                                batch_chunks,
+                                embeddings,
+                                document.filename,
+                            )
+                            self._chunk_repo.commit()
+                            chunks_created += len(batch_chunks)
+                            self._ingest_run_repo.update_progress(run.id, documents_processed, chunks_created)
+                            batch_chunks = []
+                            batch_texts = []
+
+                    if batch_chunks:
+                        self._chunk_repo.create_many(batch_chunks, commit=False)
+                        embeddings = self._openai.embed_texts(batch_texts)
+                        self._vector_store.add_embeddings(
+                            str(knowledge_base_id),
+                            batch_chunks,
+                            embeddings,
+                            document.filename,
+                        )
+                        self._chunk_repo.commit()
+                        chunks_created += len(batch_chunks)
+                        self._ingest_run_repo.update_progress(run.id, documents_processed, chunks_created)
+
+                    documents_processed += 1
+                    self._ingest_run_repo.update_progress(run.id, documents_processed, chunks_created)
+                    self._document_repo.update_ingestion_state(document.id, content_hash, datetime.utcnow())
                     continue
 
                 raw_text = extract_text_from_file(document.storage_path, document.content_type)
@@ -83,12 +161,14 @@ class IngestionService:
                     self._chunk_repo.delete_by_document(document.id)
 
                 if chunks:
-                    self._chunk_repo.create_many(chunks)
+                    self._chunk_repo.create_many(chunks, commit=False)
                     embeddings = self._openai.embed_texts([chunk.text for chunk in chunks])
                     self._vector_store.add_embeddings(str(knowledge_base_id), chunks, embeddings, document.filename)
+                    self._chunk_repo.commit()
 
                 documents_processed += 1
                 chunks_created += len(chunks)
+                self._ingest_run_repo.update_progress(run.id, documents_processed, chunks_created)
                 self._document_repo.update_ingestion_state(document.id, content_hash, datetime.utcnow())
 
             duration_ms = int((time.perf_counter() - start_time) * 1000)

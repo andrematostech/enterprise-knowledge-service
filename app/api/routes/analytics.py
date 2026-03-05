@@ -148,6 +148,7 @@ def recent_ingests(
     runs = ingest_run_repo.list_recent(knowledge_base_id, limit)
     return [
         RecentIngestRead(
+            id=run.id,
             created_at=run.created_at,
             finished_at=run.finished_at,
             status=run.status,

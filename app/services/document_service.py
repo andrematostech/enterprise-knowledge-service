@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import UploadFile
@@ -68,6 +69,8 @@ class DocumentService:
             content_type=upload.content_type or "application/octet-stream",
             storage_path="",
             size_bytes=0,
+            source="upload",
+            status="ready",
         )
         storage_filename = f"{document_id}_{filename}"
         storage_path = os.path.join(kb_folder, storage_filename)
@@ -76,6 +79,59 @@ class DocumentService:
         document.storage_path = storage_path
         document.size_bytes = size_bytes
 
+        return self._document_repo.create(document)
+
+    def register_local(
+        self,
+        knowledge_base_id: UUID,
+        relative_path: str,
+        content_type: str | None = None,
+        filename: str | None = None,
+    ) -> Document:
+        knowledge_base = self._knowledge_base_repo.get(knowledge_base_id)
+        if not knowledge_base:
+            raise ValueError("Knowledge base not found")
+        if not relative_path or not relative_path.strip():
+            raise ValueError("Relative path is required")
+
+        relative_path = relative_path.strip()
+        if Path(relative_path).is_absolute():
+            raise ValueError("Relative path must not be absolute")
+
+        storage_root = Path(self._settings.storage_path).resolve()
+        target_path = (storage_root / relative_path).resolve()
+        if storage_root != target_path and storage_root not in target_path.parents:
+            raise ValueError("Path must be inside storage directory")
+        if not target_path.exists() or not target_path.is_file():
+            raise ValueError("File not found")
+
+        ext = target_path.suffix.lower().lstrip(".")
+        if ext not in {"csv", "txt"}:
+            raise ValueError("Only CSV and TXT files can be registered")
+
+        resolved_content_type = content_type or ("text/csv" if ext == "csv" else "text/plain")
+        if resolved_content_type not in {"text/csv", "text/plain"}:
+            raise ValueError("Only CSV and TXT files can be registered")
+
+        resolved_filename = filename.strip() if filename else target_path.name
+        if not resolved_filename:
+            raise ValueError("Filename is required")
+
+        existing = self._document_repo.list_by_filename(knowledge_base_id, resolved_filename)
+        if existing:
+            raise ValueError("Document with the same filename already exists")
+
+        size_bytes = target_path.stat().st_size
+        document = Document(
+            id=uuid.uuid4(),
+            knowledge_base_id=knowledge_base_id,
+            filename=resolved_filename,
+            content_type=resolved_content_type,
+            storage_path=str(target_path),
+            size_bytes=size_bytes,
+            source="local_registered",
+            status="ready",
+        )
         return self._document_repo.create(document)
 
     def list(self, knowledge_base_id: UUID) -> list[Document]:

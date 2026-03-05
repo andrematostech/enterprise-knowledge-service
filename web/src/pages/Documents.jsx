@@ -11,10 +11,13 @@ export default function Documents({
   loading,
   error,
   onUploadFiles,
+  onRegisterDocument,
   onDelete,
   onIngest,
   uploading,
   ingesting,
+  ingestProgress,
+  registering,
   runs = [],
   search,
   setSearch,
@@ -24,6 +27,11 @@ export default function Documents({
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [activeView, setActiveView] = useState("files");
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerPath, setRegisterPath] = useState("");
+  const [registerFilename, setRegisterFilename] = useState("");
+  const [registerType, setRegisterType] = useState("text/csv");
+  const [registerError, setRegisterError] = useState("");
 
   const canUpload = activeView === "files";
 
@@ -47,25 +55,66 @@ export default function Documents({
     }
   };
 
+  const handleRegisterSubmit = async () => {
+    if (!registerPath.trim()) {
+      setRegisterError("Relative path is required.");
+      return;
+    }
+    setRegisterError("");
+    const ok = await onRegisterDocument?.({
+      relativePath: registerPath.trim(),
+      filename: registerFilename.trim() || undefined,
+      contentType: registerType
+    });
+    if (ok) {
+      setRegisterOpen(false);
+      setRegisterPath("");
+      setRegisterFilename("");
+      setRegisterType("text/csv");
+    }
+  };
+
   return (
     <div className="documents_layout">
       <Panel
         title="Documents"
-        subtitle="Upload, review, and ingest your knowledge base files."
+        subtitle="Manage and ingest your files."
         action={
-          <div className="documents_actions">
-            <span className="status_pill status_pill--subtle">Last indexed: {lastIngestAt || "-"}</span>
-            <Button variant="secondary" size="sm" onClick={onIngest} disabled={disabled || ingesting}>
-              {ingesting ? "Ingesting..." : "Ingest"}
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={disabled || uploading}
-            >
-              {uploading ? "Uploading..." : "Upload"}
-            </Button>
+          <div className="documents_action_stack">
+            <div className="documents_actions">
+              <span className="status_pill status_pill--subtle">Last indexed: {lastIngestAt || "-"}</span>
+              {ingesting && ingestProgress ? (
+                <span className="status_pill status_pill--subtle">
+                  Ingesting: {ingestProgress.documents_processed ?? 0} docs · {ingestProgress.chunks_created ?? 0} chunks
+                </span>
+              ) : null}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setRegisterOpen(true)}
+                disabled={disabled || registering}
+              >
+                Register file
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onIngest} disabled={disabled || ingesting}>
+                {ingesting ? (
+                  <>
+                    <span className="spinner" aria-hidden="true" />
+                    Ingesting...
+                  </>
+                ) : (
+                  "Ingest"
+                )}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled || uploading}
+              >
+                {uploading ? "Uploading..." : "Upload"}
+              </Button>
+            </div>
           </div>
         }
       >
@@ -178,6 +227,53 @@ export default function Documents({
           )}
         </div>
       </Panel>
+      {registerOpen ? (
+        <div className="modal_overlay" role="presentation" onClick={() => setRegisterOpen(false)}>
+          <div className="modal_panel" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="modal_header">
+              <div className="panel_title">Register file</div>
+              <Button variant="ghost" size="sm" onClick={() => setRegisterOpen(false)}>
+                Close
+              </Button>
+            </div>
+            <div className="modal_body">
+              <Input
+                label="Relative path"
+                value={registerPath}
+                onChange={(e) => setRegisterPath(e.target.value)}
+                placeholder="imports/big.csv"
+              />
+              <Input
+                label="Filename (optional)"
+                value={registerFilename}
+                onChange={(e) => setRegisterFilename(e.target.value)}
+                placeholder="big.csv"
+              />
+              <div className="field">
+                <span className="field_label">Type</span>
+                <select className="select" value={registerType} onChange={(e) => setRegisterType(e.target.value)}>
+                  <option value="text/csv">CSV</option>
+                  <option value="text/plain">TXT</option>
+                </select>
+              </div>
+              {registerError ? <div className="panel_subtitle">{registerError}</div> : null}
+              <div className="documents_actions" style={{ marginTop: "10px" }}>
+                <Button variant="secondary" size="sm" onClick={() => setRegisterOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleRegisterSubmit}
+                  disabled={registering || disabled}
+                >
+                  {registering ? "Registering..." : "Register"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

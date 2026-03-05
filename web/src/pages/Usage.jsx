@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import Panel from "../components/Panel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
@@ -72,8 +72,8 @@ export default function Usage({
                     <AreaChart data={latencySeries}>
                       <defs>
                         <linearGradient id="latencyFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--accent-9)" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="var(--accent-9)" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor="var(--accent-9)" stopOpacity={0.15} />
+                          <stop offset="100%" stopColor="var(--accent-9)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
@@ -81,8 +81,8 @@ export default function Usage({
                         tickLine={false}
                         axisLine={false}
                         width={52}
-                        domain={[0, 12000]}
-                        ticks={[0, 3000, 6000, 9000, 12000]}
+                        domain={[0, 40000]}
+                        ticks={[0, 10000, 20000, 30000, 40000]}
                         tickMargin={6}
                       />
                       <Tooltip
@@ -90,7 +90,14 @@ export default function Usage({
                         labelStyle={{ color: "var(--text-2)" }}
                         formatter={(value) => [`${value} ms`, "Latency"]}
                       />
-                      <Area type="monotone" dataKey="latency" stroke="var(--accent-9)" fill="url(#latencyFill)" />
+                      <Area
+                        type="monotone"
+                        dataKey="latency"
+                        stroke="var(--accent-9)"
+                        strokeWidth={2.5}
+                        fill="url(#latencyFill)"
+                        style={{ filter: "drop-shadow(0 0 6px rgba(79,124,255,0.35))" }}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -119,20 +126,14 @@ export default function Usage({
               {ingestSeries.length ? (
                 <div className="chart_panel">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={ingestSeries}>
-                      <defs>
-                        <linearGradient id="ingestFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--accent-7)" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="var(--accent-7)" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
+                    <BarChart data={ingestSeries} barCategoryGap={10}>
                       <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
                       <YAxis
                         tickLine={false}
                         axisLine={false}
                         width={52}
-                        domain={[0, 12000]}
-                        ticks={[0, 3000, 6000, 9000, 12000]}
+                        domain={[0, 40000]}
+                        ticks={[0, 10000, 20000, 30000, 40000]}
                         tickMargin={6}
                       />
                       <Tooltip
@@ -140,8 +141,15 @@ export default function Usage({
                         labelStyle={{ color: "var(--text-2)" }}
                         formatter={(value) => [`${value} chunks`, "Chunks"]}
                       />
-                      <Area type="monotone" dataKey="chunks" stroke="var(--accent-7)" fill="url(#ingestFill)" />
-                    </AreaChart>
+                      <Bar
+                        dataKey="chunks"
+                        name="Chunks"
+                        fill="var(--accent-9)"
+                        fillOpacity={0.6}
+                        radius={[3, 3, 0, 0]}
+                        activeBar={{ fill: "var(--accent-9)", fillOpacity: 0.6 }}
+                      />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (

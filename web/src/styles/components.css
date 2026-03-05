@@ -1677,9 +1677,25 @@ body:not(.theme-light) .input[type="time"]::-webkit-calendar-picker-indicator {
 
 .documents_actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px;
+}
+
+.documents_actions .status_pill {
+  white-space: nowrap;
+}
+
+.documents_action_stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.documents_actions .spinner {
+  border-color: rgba(107, 147, 255, 0.45);
+  border-top-color: rgba(107, 147, 255, 1);
 }
 
 .documents_filters {

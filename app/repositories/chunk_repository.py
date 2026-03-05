@@ -10,10 +10,16 @@ class ChunkRepository:
     def __init__(self, db: Session) -> None:
         self._db = db
 
-    def create_many(self, chunks: list[Chunk]) -> None:
+    def create_many(self, chunks: list[Chunk], commit: bool = True) -> None:
         if not chunks:
             return
         self._db.add_all(chunks)
+        if commit:
+            self._db.commit()
+        else:
+            self._db.flush()
+
+    def commit(self) -> None:
         self._db.commit()
 
     def list_ids_by_document(self, document_id: UUID) -> list[str]:

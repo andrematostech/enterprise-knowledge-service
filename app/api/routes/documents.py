@@ -10,7 +10,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.models.knowledge_base import KnowledgeBase
 from app.schemas.common import Message
-from app.schemas.document import DocumentRead
+from app.schemas.document import DocumentRead, DocumentRegisterRequest
 from app.services.document_service import DocumentService
 from app.services.vector_store_service import VectorStoreService
 
@@ -43,6 +43,29 @@ def upload_document(
     try:
         require_kb_access(knowledge_base_id, db, current_user, "admin")
         document = service.upload(knowledge_base_id, file, replace_existing=replace_existing)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return DocumentRead.model_validate(document)
+
+
+@router.post("/register", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
+def register_document(
+    knowledge_base_id: UUID,
+    payload: DocumentRegisterRequest,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(require_auth),
+    service: DocumentService = Depends(get_service),
+) -> DocumentRead:
+    try:
+        require_kb_access(knowledge_base_id, db, current_user, "admin")
+        if payload.knowledge_base_id != knowledge_base_id:
+            raise ValueError("Knowledge base mismatch")
+        document = service.register_local(
+            knowledge_base_id=knowledge_base_id,
+            relative_path=payload.relative_path,
+            content_type=payload.content_type,
+            filename=payload.filename,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return DocumentRead.model_validate(document)

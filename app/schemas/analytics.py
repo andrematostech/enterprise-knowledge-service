@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -31,6 +32,7 @@ class RecentQueryRead(BaseModel):
 
 
 class RecentIngestRead(BaseModel):
+    id: UUID
     created_at: datetime
     finished_at: datetime | None
     status: str

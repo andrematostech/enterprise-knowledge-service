@@ -1,4 +1,5 @@
 import csv
+from collections.abc import Iterator
 from pathlib import Path
 
 from docx import Document
@@ -99,3 +100,55 @@ def extract_text_from_file(path: str, content_type: str | None = None) -> str:
         return _extract_pptx_text(file_path)
 
     raise ValueError("Unsupported document type")
+
+
+def iter_text_chunks(file_path: Path, chunk_size: int) -> Iterator[str]:
+    buffer: list[str] = []
+    current_size = 0
+    with file_path.open("r", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            cleaned = line.rstrip("\n")
+            if not cleaned:
+                continue
+            buffer.append(cleaned)
+            current_size += len(cleaned)
+            if current_size >= chunk_size:
+                yield "\n".join(buffer)
+                buffer = []
+                current_size = 0
+    if buffer:
+        yield "\n".join(buffer)
+
+
+def iter_csv_chunks(file_path: Path, rows_per_chunk: int = 200, chunk_size: int = 4000) -> Iterator[str]:
+    batch: list[str] = []
+    current_size = 0
+    with file_path.open("r", encoding="utf-8", errors="ignore", newline="") as handle:
+        reader = csv.reader(handle)
+        for row in reader:
+            if not row:
+                continue
+            line = "\t".join(row)
+            batch.append(line)
+            current_size += len(line)
+            if len(batch) >= rows_per_chunk or current_size >= chunk_size:
+                yield "\n".join(batch)
+                batch = []
+                current_size = 0
+    if batch:
+        yield "\n".join(batch)
+
+
+def iter_streamable_chunks(
+    path: str,
+    content_type: str | None,
+    chunk_size: int,
+    rows_per_chunk: int = 200,
+) -> Iterator[str] | None:
+    file_path = Path(path)
+    suffix = file_path.suffix.lower()
+    if content_type == "text/csv" or suffix == ".csv":
+        return iter_csv_chunks(file_path, rows_per_chunk=rows_per_chunk, chunk_size=chunk_size)
+    if content_type in SUPPORTED_TEXT_TYPES or suffix == ".txt":
+        return iter_text_chunks(file_path, chunk_size=chunk_size)
+    return None

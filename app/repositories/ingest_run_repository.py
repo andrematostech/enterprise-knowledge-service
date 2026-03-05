@@ -18,6 +18,22 @@ class IngestRunRepository:
         self._db.refresh(run)
         return run
 
+    def get(self, run_id: uuid.UUID) -> IngestRun | None:
+        return self._db.get(IngestRun, run_id)
+
+    def update_progress(
+        self,
+        run_id: uuid.UUID,
+        documents_processed: int,
+        chunks_created: int,
+    ) -> None:
+        run = self._db.get(IngestRun, run_id)
+        if not run:
+            raise ValueError("Ingest run not found")
+        run.documents_processed = documents_processed
+        run.chunks_created = chunks_created
+        self._db.commit()
+
     def complete(
         self,
         run_id: uuid.UUID,

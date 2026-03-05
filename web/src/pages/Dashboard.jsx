@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { FiActivity, FiClock, FiDatabase, FiSearch } from "react-icons/fi";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import Panel from "../components/Panel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 import EmptyState from "../components/EmptyState.jsx";
@@ -18,6 +19,17 @@ export default function Dashboard({
   recentQueriesEmpty,
   recentIngestsEmpty
 }) {
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1024px)");
+    const onChange = () => setIsNarrowViewport(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  const barCategoryGap = isNarrowViewport ? 100 : 10;
+  const barSize = isNarrowViewport ? 46 : 60;
   const iconMap = {
     "Docs Indexed": <FiDatabase />,
     "Queries (7d)": <FiSearch />,
@@ -74,15 +86,10 @@ export default function Dashboard({
           ) : queryVolume?.length ? (
             <div className="chart_panel">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={queryVolume}>
-                  <defs>
-                    <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent-9)" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="var(--accent-9)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
+                <ComposedChart data={queryVolume} barCategoryGap={barCategoryGap}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
                   <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} width={40} />
+                  <YAxis tickLine={false} axisLine={false} width={40} domain={[0, "auto"]} />
                   <Tooltip
                     contentStyle={{ background: "var(--surface-3)", border: "1px solid var(--stroke-1)" }}
                     labelStyle={{ color: "var(--text-2)" }}
@@ -91,8 +98,25 @@ export default function Dashboard({
                       `Avg ${props?.payload?.avg_latency_ms ?? "-"} ms`
                     ]}
                   />
-                  <Area type="monotone" dataKey="count" stroke="var(--accent-9)" fill="url(#volumeFill)" />
-                </AreaChart>
+                  <Bar
+                    dataKey="count"
+                    name="Queries"
+                    barSize={barSize}
+                    radius={[3, 3, 0, 0]}
+                    fill="var(--accent-9)"
+                    fillOpacity={0.8}
+                    activeBar={{ fill: "var(--accent-9)", fillOpacity: 0.6 }}
+                  />
+                  <Line
+                    type="linear"
+                    dataKey="count"
+                    name="Trend"
+                    stroke="var(--text-3)"
+                    strokeWidth={1.5}
+                    dot={false}
+                    activeDot={{ r: 3 }}
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           ) : (

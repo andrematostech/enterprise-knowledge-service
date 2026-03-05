@@ -72,6 +72,8 @@ export default function App() {
   const [docsError, setDocsError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [ingestRunId, setIngestRunId] = useState(null);
+  const [registering, setRegistering] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [docSearch, setDocSearch] = useState("");
 
@@ -941,6 +943,39 @@ export default function App() {
     }
   };
 
+  const handleRegisterDocument = async ({ relativePath, filename, contentType }) => {
+    if (!kbId) {
+      setDocsError("Select or create a knowledge base in Settings.");
+      return false;
+    }
+    setRegistering(true);
+    setDocsError("");
+    try {
+      const { res, data } = await apiRequest({
+        baseUrl,
+        path: `/api/v1/knowledge-bases/${kbId}/documents/register`,
+        method: "POST",
+        headers: buildHeaders({ apiKey, token, json: true }),
+        body: JSON.stringify({
+          knowledge_base_id: kbId,
+          relative_path: relativePath,
+          content_type: contentType || undefined,
+          filename: filename || undefined
+        })
+      });
+      if (!res.ok) throw new Error(extractDetail(data) || "Failed to register document");
+      await fetchDocuments();
+      pushToast("success", "Document registered.");
+      return true;
+    } catch (err) {
+      setDocsError(err.message || "Register failed");
+      pushToast("error", err.message || "Register failed");
+      return false;
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   // Delete a document from the current knowledge base.
   const handleDelete = async (docId) => {
     if (!kbId) return;
@@ -978,17 +1013,16 @@ export default function App() {
         headers: buildHeaders({ apiKey, token })
       });
       if (!res.ok) throw new Error(extractDetail(data) || "Ingestion failed");
-      const nowIso = new Date().toISOString();
-      setLastIngestAt(nowIso);
-      await fetchDocuments();
+      setIngestRunId(data?.id || null);
       fetchRecentIngests();
-      fetchOverview();
       pushToast("success", "Ingestion started.");
     } catch (err) {
       setDocsError(err.message || "Ingestion failed");
       pushToast("error", err.message || "Ingestion failed");
-    } finally {
       setIngesting(false);
+      setIngestRunId(null);
+    } finally {
+      // keep ingesting true while background run progresses
     }
   };
 
@@ -1039,6 +1073,28 @@ export default function App() {
       fetchRecentIngests();
     }
   }, [baseUrl, apiKey, token, kbId, dashboardRange]);
+
+  useEffect(() => {
+    if (!ingesting || !kbId || !authReady) return;
+    const intervalId = setInterval(() => {
+      fetchRecentIngests();
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, [ingesting, kbId, authReady, baseUrl, apiKey, token]);
+
+  useEffect(() => {
+    if (!ingesting || !ingestRunId) return;
+    const run = recentIngestsData.find((item) => item.id === ingestRunId);
+    if (!run) return;
+    if (run.status !== "processing") {
+      setIngesting(false);
+      setIngestRunId(null);
+      if (run.finished_at) setLastIngestAt(run.finished_at);
+      fetchDocuments();
+      fetchOverview();
+      fetchRecentIngests();
+    }
+  }, [ingesting, ingestRunId, recentIngestsData]);
 
   // Authenticated user bootstrap: profile + inbox.
   useEffect(() => {
@@ -1199,6 +1255,11 @@ export default function App() {
     }));
     return term ? list.filter((doc) => doc.name.toLowerCase().includes(term)) : list;
   }, [documents, docSearch]);
+
+  const ingestProgress = useMemo(() => {
+    if (!ingestRunId) return null;
+    return recentIngestsData.find((item) => item.id === ingestRunId) || null;
+  }, [ingestRunId, recentIngestsData]);
 
   // Build cross-section matches for the global search panel.
   const globalSearchResults = useMemo(() => {
@@ -1539,10 +1600,13 @@ export default function App() {
         loading={docsLoading}
         error={docsError}
         onUploadFiles={handleUpload}
+        onRegisterDocument={handleRegisterDocument}
         onDelete={handleDelete}
         onIngest={handleIngest}
         uploading={uploading}
         ingesting={ingesting}
+        ingestProgress={ingestProgress}
+        registering={registering}
         runs={recentIngests}
         search={docSearch}
         setSearch={setDocSearch}

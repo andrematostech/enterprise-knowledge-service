@@ -64,6 +64,28 @@ It is designed as a backend-first system with a control-plane UI — not a chatb
 
 ---
 
+## Large File Ingestion (2GB+)
+
+Browser uploads are capped at **25 MB**. For large datasets (e.g., multi‑GB CSV/TXT), use the **Register file** flow:
+
+1. Place the file inside the backend storage directory (default: `./storage`).
+   Example:
+   ```
+   storage/imports/big.csv
+   ```
+2. In the UI go to **Documents → Register file** and use a **relative path**:
+   ```
+   imports/big.csv
+   ```
+3. Click **Register**, then **Ingest**.
+
+Notes:
+- Only **CSV** and **TXT** are supported for register‑ingest.
+- Paths must be **relative** (no leading `/` or drive letters).
+- In Docker, `./storage` is mounted to `/app/storage` in the API container.
+
+---
+
 ## Key Features
 
 - Multi-tenant workspace isolation
